@@ -15,11 +15,14 @@
 # limitations under the License.
 #
 import webapp2
+import datetime
+from google.appengine.ext import db
+from google.appengine.api import users
 
 class MainHandler(webapp2.RequestHandler):
-    def get(self):
-        self.response.write('Hello there!')
+	def get(self):
+		self.response.write('Hello there!')
 
 app = webapp2.WSGIApplication([
-    ('/', MainHandler)
+	('/', MainHandler)
 ], debug=True)
