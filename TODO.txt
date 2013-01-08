@@ -1,7 +1,9 @@
 NECESSARY
+  * Require people to log in
   * Only let admins delete
   * Only let admins enter new ideas
   * When delete - should delete all descendants???
+  * Design for mobile
 
 OPTIONAL
   * Search

@@ -27,7 +27,7 @@ function displayIdeasImpl(result) {
 		for (var i=0; i<ideas.length; i++) {
 			var idea = ideas[i];
 			var tools = "<span class='editIcons' key='" + idea.key + "' style='visibility:hidden'>";
-			tools += "<a href='javascript:deleteIdea()'><img id='ideaDelete' src='/images/trash.png' width='13' height='14' style='float:left'></a>&nbsp;";
+			tools += "<a href='javascript:deleteIdea()'><img id='ideaDelete' src='/images/trash.png' width='13' height='14' style='float:left; vertical-align:bottom'></a>&nbsp;";
 			tools += "<a id='addIdea' href='javascript:addIdea()'>add</a>";
 			tools += "&nbsp;&nbsp;</span>";
 
