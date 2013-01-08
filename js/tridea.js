@@ -28,7 +28,7 @@ function displayIdeasImpl(result) {
 			var idea = ideas[i];
 			var tools = "<span class='editIcons' key='" + idea.key + "' style='visibility:hidden'>";
 			tools += "<a href='javascript:deleteIdea()'><img id='ideaDelete' src='/images/trash.png' width='13' height='14' style='float:left'></a>&nbsp;";
-			tools += "<a id='editIdea' href='javascript:editIdea()'>edit</a>";
+			tools += "<a id='addIdea' href='javascript:addIdea()'>add</a>";
 			tools += "&nbsp;&nbsp;</span>";
 
 			html += "<div class='idea' id='" + idea.key + "' behavior='editable'>";
@@ -39,14 +39,23 @@ function displayIdeasImpl(result) {
 		}
 		$("#ideas").append(html);
 
-		// Event handlers on ideas
-		$(".idea[behavior=editable]").mouseenter(function(evt) {
-		    showIdeaTools(evt);
-		});
-		$(".idea[behavior=editable]").mouseleave(function(evt) {
-		    hideIdeaTools(evt);
-		});
+		enableIdeaTools();
 	}
+}
+
+function enableIdeaTools() {
+	// Event handlers on ideas
+	$(".idea[behavior=editable]").on("mouseenter", function(evt) {
+	    showIdeaTools(evt);
+	});
+	$(".idea[behavior=editable]").on("mouseleave", function(evt) {
+	    hideIdeaTools(evt);
+	});
+}
+
+function disableIdeaTools() {
+	$(".idea[behavior=editable]").off("mouseenter");
+	$(".idea[behavior=editable]").off("mouseleave");
 }
 
 function showIdeaTools(evt) {
@@ -61,57 +70,44 @@ function hideIdeaTools(evt) {
 	$(ideaNode).find(".editIcons").css("visibility", "hidden");
 }
 
-function editNote() {
-	$("#editNoteLabel").css("visibility", "hidden");
+function addIdea() {
+	disableIdeaTools();
+	
+	var key = $(".editActive").attr("id");
+	$(".editActive").find(".editIcons").css("visibility", "hidden");
 
-	var id = $("#editNote").parents("table").attr("id");
-	var key = id.substring(6);
-	var tableDiv = $("#" + id);
-	var noteDiv = $("#editNote").parents("table").find("td:last");
-	var origText = noteDiv.text();
-	var origWidth = noteDiv.width();
-	if (origWidth < 250) origWidth = 250;
-	var origHeight = noteDiv.height();
-	if (origHeight < 35) origHeight = 35;
-	var html = "<textarea id='noteBox' type='text'></textarea><br>";
-	html += "<input id='noteSave' type='button' value='Save Note'> <a id='noteCancel' noteid='" + id + "' href='javascript:return false'>Cancel</a>"
-	noteDiv.html(html);
-	$("#noteBox").val(origText);
-	$("#noteBox").css("width", origWidth);
-	$("#noteBox").css("height", origHeight + 20);
-	$("#noteBox").focus();
-	$("#noteBox").keydown(function(event) {
-		if (event.which == 27) {  // Escape key
-			cancelEditNote(noteDiv, origText, key);
-		}
+	var html = "<div id='ideaAdd'>";
+	html += "<textarea id='ideaBox' type='text'></textarea><br>";
+	html += "<input id='ideaSave' type='button' value='Add Idea'> <a id='ideaCancel' key='" + key + "' href='javascript:return false'>Cancel</a>";
+	html += "</div>";
+	$(".editActive").append(html);
+	var origText = $(".editActive").find(".ideaText").text();
+	var origLeft = $(".editActive").find(".ideaText").position().left;
+	var origWidth = $(".editActive").width() - 200;
+	var origHeight = $(".editActive").height();
+	$("#ideaAdd").css("margin-left", origLeft);
+	$("#ideaBox").val(origText);
+	$("#ideaBox").css("width", "70%");
+	$("#ideaBox").css("height", origHeight);
+	$("#ideaBox").select();
+	$("#ideaBox").focus();
+
+	$("#ideaSave").click(function() {
+		var idea = $("#ideaBox").val();
+		$.post("/new", {"idea" : idea, "father" : key}, function() {
+			window.location.href = "/";
+		});
 	});
 
-	$("#noteSave").click(function() {
-		var note = $("#noteBox").val();
-		noteDiv.html(note);
-		hideNoteTools(key);
-		var labelDiv = tableDiv.find("td:first").next();
-		if (labelDiv.hasClass("empty")) {
-			labelDiv.html("");
-		}
-
-		$.post("/save", {"key" : key, "note" : note});
-
-		paperNum = paperNumsByKey[key];
-		papers[paperNum]['note'] = note;
-
-		$('#paper' + currentPaperIndex).focus();
-	});
-
-	$("#noteCancel").click(function() {
-		cancelEditNote(noteDiv, origText, key);
+	$("#ideaCancel").click(function() {
+		cancelAddIdea();
 	});
 }
 
-function cancelEditNote(noteDiv, origText, key) {
-	noteDiv.html(origText);
-	hideNoteTools(key);
-	$('#paper' + currentPaperIndex).focus();
+function cancelAddIdea() {
+	enableIdeaTools();
+	$(".editActive").removeClass("editActive");
+	$("#ideaAdd").remove();
 }
 
 function deleteIdea() {

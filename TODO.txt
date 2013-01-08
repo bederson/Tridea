@@ -1,3 +1,9 @@
-// Search
-// Channels to auto-refresh
-// Click on person to see all ideas by that person
+NECESSARY
+  * Only let admins delete
+  * Only let admins enter new ideas
+  * When delete - should delete all descendants???
+
+OPTIONAL
+  * Search
+  * Channels to auto-refresh
+  * Click on person to see all ideas by that person

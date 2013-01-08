@@ -57,10 +57,13 @@ class Delete(webapp2.RequestHandler):
 			return self.redirect('/')
 
 class New(webapp2.RequestHandler):
-	# TODO: add parent
 	def post(self):
 		idea = self.request.get('idea')
+		fatherKey = self.request.get('father')
 		ideaObj = Idea(idea=idea)
+		if fatherKey:
+			fatherObj = Idea.get_by_id(int(fatherKey))
+			ideaObj.father = fatherObj;
 		ideaObj.put()
 		return self.redirect('/')
 
