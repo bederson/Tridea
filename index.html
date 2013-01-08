@@ -1,0 +1,38 @@
+<html>
+  <head>
+	<link type="text/css" rel="stylesheet" href="/css/main.css" />
+	<script src="//ajax.googleapis.com/ajax/libs/jquery/1.8.3/jquery.min.js"></script>
+	<script type="text/javascript" src="js/tridea.js"></script>
+	<title>Tridea</title>
+  </head>
+  <body>
+	<table class="header" width="100%">
+		<tr>
+			<td width="30%"><a href="/">Tridea</a></td>
+			<td align="middle" width="40%">Tridea: Your ideas, amplified</td>
+			<td align="right" width="30%">
+				{% if user %}
+					{{ user }}
+				{% endif %}
+				<a href="{{ url }}">{{ url_linktext }}</a>
+			</td>
+		</tr>
+	</table>
+	<p>
+	<h1 id="resultsOverview">Ideas</h1>
+	<div id="loading">Loading ...</div>
+
+	<div id="ideas"></div>
+	
+	<!-- FORM FOR NEW IDEAS -->
+	<br><br><br>
+	<hr>
+	<h3>Enter new idea:</h3>
+	<form action="/new" method="post">
+		<div class='formHeading'>
+			<textarea name="idea" rows="3" cols="60"></textarea><br>
+			<input type="submit" value="Add New Idea">
+		</div>
+	</form>
+  </body>
+</html>

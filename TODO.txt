@@ -1,0 +1,3 @@
+// Search
+// Channels to auto-refresh
+// Click on person to see all ideas by that person

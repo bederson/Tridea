@@ -14,19 +14,16 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 #
+import os
+import json
 import webapp2
 import datetime
-import json
 from google.appengine.ext import db
+from google.appengine.ext.webapp import template
 from google.appengine.api import users
 
-class Author(db.Model):
-	# TODO Add support for finding all votes and all ideas
-	author = db.UserProperty()
-	affiliation = db.StringProperty()
-
 class Idea(db.Model):
-	author = db.ReferenceProperty(Author)
+	author = db.UserProperty(auto_current_user=True)
 	father = db.SelfReferenceProperty()
 	date = db.DateProperty(auto_now=True)
 	idea = db.StringProperty(required=True)
@@ -35,40 +32,62 @@ class Idea(db.Model):
 
 class MainHandler(webapp2.RequestHandler):
 	def get(self):
-		self.response.write('Hello there!')
+		if users.get_current_user():
+			url = users.create_logout_url(self.request.uri)
+			url_linktext = 'Logout'
+		else:
+			url = users.create_login_url(self.request.uri)
+			url_linktext = 'Login'
 
-class Save(webapp2.RequestHandler):
-	# TODO: add parent
-	# TODO: support modification of existing idea
+		template_values = {
+			'user': users.get_current_user(),
+			'url': url,
+			'url_linktext': url_linktext,
+		}
+
+		path = os.path.join(os.path.dirname(__file__), 'index.html')
+		self.response.out.write(template.render(path, template_values))
+
+class Delete(webapp2.RequestHandler):
 	def post(self):
-		author = Author.all().filter('user =', users.get_current_user()).get()
+		key = self.request.get('key')
+		ideaObj = Idea.get_by_id(int(key))
+		if ideaObj:
+			db.delete(ideaObj.key())
+			return self.redirect('/')
+
+class New(webapp2.RequestHandler):
+	# TODO: add parent
+	def post(self):
 		idea = self.request.get('idea')
 		ideaObj = Idea(idea=idea)
-		ideaObj.author = author
 		ideaObj.put()
+		return self.redirect('/')
 
 class Query(webapp2.RequestHandler):
 	def get(self):
 		ideas = Idea.all()
 		count = ideas.count()
 		ideaResult = []
-		for idea in ideas:
+		for ideaObj in ideas:
 			# Build up results dictionary
-			if idea.author:
-				author = idea.author.name
+			if ideaObj.author:
+				author = ideaObj.author.nickname()
 			else:
 				author = None
-			idea = {
+			ideaJSON = {
+				'key' : ideaObj.key().id(),
 				'author' : author,
-				'idea' : idea.idea
+				'idea' : ideaObj.idea
 			}
-			ideaResult.append(idea)
+			ideaResult.append(ideaJSON)
 
 		result = {'count' : count, 'ideas': ideaResult}
 		self.response.out.write(json.dumps(result))
 
 app = webapp2.WSGIApplication([
 	('/', MainHandler),
+	('/delete', Delete),
+	('/new', New),
 	('/q', Query),
-	('/save', Save)
 ], debug=True)
