@@ -25,6 +25,7 @@ from google.appengine.api import users
 class Idea(db.Model):
 	author = db.UserProperty(auto_current_user=True)
 	father = db.SelfReferenceProperty()
+	children = db.ListProperty(db.Key)
 	date = db.DateProperty(auto_now=True)
 	idea = db.StringProperty(required=True)
 	thumbsUp = db.IntegerProperty(default=0)
@@ -63,11 +64,15 @@ class New(webapp2.RequestHandler):
 		ideaObj = Idea(idea=idea)
 		if fatherKey:
 			fatherObj = Idea.get_by_id(int(fatherKey))
-			ideaObj.father = fatherObj;
+			ideaObj.father = fatherObj
+			# Add self to father
+			fatherObj.children = fatherObj.children.append(ideaObj)
+			fatherObj.put()
 		ideaObj.put()
 		return self.redirect('/')
 
 class Query(webapp2.RequestHandler):
+	# TODO: CONVERT TO DEPTH-FIRST SEARCH
 	def get(self):
 		ideas = Idea.all()
 		count = ideas.count()
@@ -78,10 +83,15 @@ class Query(webapp2.RequestHandler):
 				author = ideaObj.author.nickname()
 			else:
 				author = None
+			if ideaObj.father:
+				father = ideaObj.father.key().id()
+			else:
+				father = None
 			ideaJSON = {
 				'key' : ideaObj.key().id(),
 				'author' : author,
-				'idea' : ideaObj.idea
+				'idea' : ideaObj.idea,
+				'father' : father
 			}
 			ideaResult.append(ideaJSON)
 
