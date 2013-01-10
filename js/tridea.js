@@ -14,7 +14,7 @@ function displayIdeasImpl(result) {
 	var numIdeas = result['count'];
 	var ideas = result['ideas'];
 	if (numIdeas == 0) {
-		var numPapersStr = 'No ideas yet';
+		var numIdeasStr = 'No ideas yet';
 	} else if (numIdeas == 1) {
 		var numIdeasStr = '1 Idea';
 	} else {
@@ -26,13 +26,24 @@ function displayIdeasImpl(result) {
 		var html = "";
 		for (var i=0; i<ideas.length; i++) {
 			var idea = ideas[i];
+			// Edit icons at beginning of line
 			var tools = "<span class='editIcons' style='visibility:hidden'>";
 			tools += "<a href='javascript:deleteIdea()'><img id='ideaDelete' src='/images/trash.png' width='13' height='14' style='float:left; vertical-align:bottom'></a>&nbsp;";
 			tools += "<a id='addIdea' href='javascript:addIdea()'>add</a>";
 			tools += "&nbsp;&nbsp;</span>";
 
+			// Indentation for hierarchy
+			var indent = "";
+			if (idea.father != null) {
+				for (var j=0; j<idea.depth; j++) {
+					indent += "<span style='margin-right:15px; color:#aaa'>|</span>";
+				}
+			}
+
+			// Idea
 			html += "<div class='idea' id='" + idea.id + "' behavior='editable'>";
 			html += tools;
+			html += indent;
 			html += "<span class='ideaText'>" + idea.idea + "</span>";
 			html += "<span class='author'>&nbsp;&nbsp;&nbsp -- " + idea.author + "</span>";
 			html += "</div>";

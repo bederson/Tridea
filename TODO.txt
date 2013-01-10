@@ -4,6 +4,7 @@ NECESSARY
   * Only let admins enter new ideas
   * When delete - should delete all descendants???
   * Design for mobile
+  * SECURITY: Make sure that all user is escaped/safe
 
 OPTIONAL
   * Search
