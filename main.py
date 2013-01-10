@@ -28,8 +28,8 @@ class Idea(db.Model):
 	children = db.ListProperty(db.Key)
 	date = db.DateProperty(auto_now=True)
 	idea = db.StringProperty(required=True)
-	thumbsUp = db.IntegerProperty(default=0)
-	thumbsDown = db.IntegerProperty(default=0)
+	thumbs = db.IntegerProperty(default=0)
+	maxThumbs = db.IntegerProperty(default=0)
 
 class MainHandler(webapp2.RequestHandler):
 	def get(self):
@@ -62,13 +62,15 @@ class New(webapp2.RequestHandler):
 		idea = self.request.get('idea')
 		fatherKey = self.request.get('father')
 		ideaObj = Idea(idea=idea)
+		ideaObj.put()
 		if fatherKey:
 			fatherObj = Idea.get_by_id(int(fatherKey))
-			ideaObj.father = fatherObj
-			# Add self to father
-			fatherObj.children = fatherObj.children.append(ideaObj)
-			fatherObj.put()
-		ideaObj.put()
+			if fatherObj:
+				ideaObj.father = fatherObj
+				ideaObj.put()
+				# Add self to father
+				fatherObj.children.append(ideaObj.key())
+				fatherObj.put()
 		return self.redirect('/')
 
 class Query(webapp2.RequestHandler):
