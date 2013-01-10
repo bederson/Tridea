@@ -26,12 +26,12 @@ function displayIdeasImpl(result) {
 		var html = "";
 		for (var i=0; i<ideas.length; i++) {
 			var idea = ideas[i];
-			var tools = "<span class='editIcons' key='" + idea.key + "' style='visibility:hidden'>";
+			var tools = "<span class='editIcons' style='visibility:hidden'>";
 			tools += "<a href='javascript:deleteIdea()'><img id='ideaDelete' src='/images/trash.png' width='13' height='14' style='float:left; vertical-align:bottom'></a>&nbsp;";
 			tools += "<a id='addIdea' href='javascript:addIdea()'>add</a>";
 			tools += "&nbsp;&nbsp;</span>";
 
-			html += "<div class='idea' id='" + idea.key + "' behavior='editable'>";
+			html += "<div class='idea' id='" + idea.id + "' behavior='editable'>";
 			html += tools;
 			html += "<span class='ideaText'>" + idea.idea + "</span>";
 			html += "<span class='author'>&nbsp;&nbsp;&nbsp -- " + idea.author + "</span>";
@@ -73,12 +73,12 @@ function hideIdeaTools(evt) {
 function addIdea() {
 	disableIdeaTools();
 	
-	var key = $(".editActive").attr("id");
+	var id = $(".editActive").attr("id");
 	$(".editActive").find(".editIcons").css("visibility", "hidden");
 
 	var html = "<div id='ideaAdd'>";
 	html += "<textarea id='ideaBox' type='text'></textarea><br>";
-	html += "<input id='ideaSave' type='button' value='Add Idea'> <a id='ideaCancel' key='" + key + "' href='javascript:return false'>Cancel</a>";
+	html += "<input id='ideaSave' type='button' value='Add Idea'> <a id='ideaCancel' href='javascript:return false'>Cancel</a>";
 	html += "</div>";
 	$(".editActive").append(html);
 	var origText = $(".editActive").find(".ideaText").text();
@@ -94,7 +94,7 @@ function addIdea() {
 
 	$("#ideaSave").click(function() {
 		var idea = $("#ideaBox").val();
-		$.post("/new", {"idea" : idea, "father" : key}, function() {
+		$.post("/new", {"idea" : idea, "father" : id}, function() {
 			window.location.href = "/";
 		});
 	});
@@ -111,8 +111,8 @@ function cancelAddIdea() {
 }
 
 function deleteIdea() {
-	var key = $(".editActive").attr("id");
-	$.post("/delete", {"key" : key}, function() {
+	var id = $(".editActive").attr("id");
+	$.post("/delete", {"id" : id}, function() {
 		window.location.href = "/";
 	});
 }

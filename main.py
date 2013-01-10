@@ -17,6 +17,7 @@
 import os
 import json
 import webapp2
+import logging
 import datetime
 from google.appengine.ext import db
 from google.appengine.ext.webapp import template
@@ -51,9 +52,19 @@ class MainHandler(webapp2.RequestHandler):
 
 class Delete(webapp2.RequestHandler):
 	def post(self):
-		key = self.request.get('key')
-		ideaObj = Idea.get_by_id(int(key))
+		idStr = self.request.get('id')
+		ideaObj = Idea.get_by_id(int(idStr))
 		if ideaObj:
+			fatherObj = ideaObj.father
+			if fatherObj:
+				# Remove self from father
+				fatherObj.children.remove(ideaObj.key())
+				fatherObj.put()
+			# Remove father pointer from children
+			for child in ideaObj.children:
+				childObj = db.get(child)
+				childObj.father = None
+				childObj.put()
 			db.delete(ideaObj.key())
 			return self.redirect('/')
 
@@ -90,7 +101,7 @@ class Query(webapp2.RequestHandler):
 			else:
 				father = None
 			ideaJSON = {
-				'key' : ideaObj.key().id(),
+				'id' : ideaObj.key().id(),
 				'author' : author,
 				'idea' : ideaObj.idea,
 				'father' : father
