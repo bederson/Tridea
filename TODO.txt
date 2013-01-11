@@ -1,12 +1,13 @@
 NECESSARY
   * Paging model - one Topic per page
-  * Sort ideas to make more popular ideas appear on top
-  * Make your own ideas appear visually distinct
   * Allow editing of your own ideas by just clicking on them
     Integrate delete into editing
   * Require people to log in in order to edit
+
+LATER
+  * Make your own ideas appear visually distinct
   * Only let admins enter new ideas
-  * When delete - should delete all descendants?  Else promote descendants?
+  * When delete, promote descendants
   * Design for mobile
   * SECURITY: Make sure that all user is escaped/safe
 

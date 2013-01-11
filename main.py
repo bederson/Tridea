@@ -26,11 +26,11 @@ from google.appengine.api import users
 class Idea(db.Model):
 	author = db.UserProperty(auto_current_user_add=True)
 	father = db.SelfReferenceProperty()
-	children = db.ListProperty(db.Key)
+	children = db.ListProperty(db.Key)			# Child ideas of this idea in sorted order by num likes
 	date = db.DateProperty(auto_now=True)
 	idea = db.StringProperty(required=True)
 	likes = db.IntegerProperty(default=0)
-	maxDescLikes = db.IntegerProperty(default=0)
+	descLikes = db.IntegerProperty(default=0)
 
 	@property
 	def fatherID(self):
@@ -53,23 +53,43 @@ def doesLike(ideaObj):
 		return False
 
 def doLike(ideaObj):
-	logging.info("DO LIKE")
+	"""If idea not liked by current user, then like it"""
 	if not doesLike(ideaObj):
 		like = LikedIdea()
 		like.idea = ideaObj
 		like.put()
 		ideaObj.likes += 1
 		ideaObj.put()
+		updateAncestorLikes(ideaObj, 1)
 
 def doUnlike(ideaObj):
-	logging.info("DOUNLIKE")
+	"""If idea liked by current user, then unlike it"""
 	like = LikedIdea.all()
 	like = like.filter('author =', users.get_current_user())
 	like = like.filter('idea =', ideaObj)
-	logging.info("DOUNLIKE: COUNT = %d", like.count())
 	if like.count() > 0:
 		db.delete(like.get().key())
 		ideaObj.likes -= 1
+		ideaObj.put()
+		updateAncestorLikes(ideaObj, -1)
+
+def updateAncestorLikes(ideaObj, delta):
+	ideaObj.descLikes += delta
+	ideaObj.put()
+	father = ideaObj.father
+	if father:
+		sortChildren(father)		# Maintain sort order of father's children (if there is a father)
+		updateAncestorLikes(father, delta)
+
+def sortChildren(ideaObj):
+	"""Sorts children by number of likes"""
+	def ideaCompareByLikes(key1, key2):
+		i1 = db.get(key1)
+		i2 = db.get(key2)
+		return int(i2.descLikes - i1.descLikes)
+
+	if ideaObj:
+		ideaObj.children.sort(cmp=ideaCompareByLikes)
 		ideaObj.put()
 
 class MainHandler(webapp2.RequestHandler):
@@ -92,14 +112,12 @@ class MainHandler(webapp2.RequestHandler):
 
 class Like(webapp2.RequestHandler):
 	def post(self):
-		logging.info("POST Like")
 		idStr = self.request.get('id')
 		ideaObj = Idea.get_by_id(int(idStr))
 		doLike(ideaObj)
 
 class Unlike(webapp2.RequestHandler):
 	def post(self):
-		logging.info("POST Unlike")
 		idStr = self.request.get('id')
 		ideaObj = Idea.get_by_id(int(idStr))
 		doUnlike(ideaObj)
