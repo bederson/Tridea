@@ -27,22 +27,35 @@ function displayIdeasImpl(result) {
 		for (var i=0; i<ideas.length; i++) {
 			var idea = ideas[i];
 			// Edit icons at beginning of line
-			var tools = "<span class='editIcons' style='visibility:hidden'>";
-			tools += "<a href='javascript:deleteIdea()'><img id='ideaDelete' src='/images/trash.png' width='13' height='14' style='float:left; vertical-align:bottom'></a>&nbsp;";
-			tools += "<a id='addIdea' href='javascript:addIdea()'>add</a>";
+			var tools = "<span class='editIcons' style='visibility:hidden; float:left; width:110px'>";
+			tools += "<a href='javascript:deleteIdea()'><img id='ideaDelete' src='/images/trash.png' width='13' height='14' style='float:left; vertical-align:bottom'></a>&nbsp;&nbsp;";
+			tools += "<a id='addIdea' href='javascript:addIdea()'>add</a>&nbsp;&nbsp;";
+			if (idea.doesLike) {
+				tools += "<a id='likeIdea' href='javascript:unlikeIdea()'>unlike</a>";
+			} else {
+				tools += "<a id='likeIdea' href='javascript:likeIdea()'>like</a>";
+			}
 			tools += "&nbsp;&nbsp;</span>";
 
 			// Indentation for hierarchy
 			var indent = "";
 			if (idea.father != null) {
 				for (var j=0; j<idea.depth; j++) {
-					indent += "<span style='margin-right:15px; color:#aaa'>|</span>";
+					indent += "<span style='margin-right:15px; color:#bbb'>|</span>";
 				}
 			}
+			
+			// Likes
+			var likes = "<span style='float:left; width:40px'>&nbsp;";
+			if (idea.likes > 0) {
+				likes += idea.likes + "<img src='images/heart.png'> ";
+			}
+			likes += "</span>"
 
 			// Idea
 			html += "<div class='idea' id='" + idea.id + "' behavior='editable'>";
 			html += tools;
+			html += likes;
 			html += indent;
 			html += "<span class='ideaText'>" + idea.idea + "</span>";
 			html += "<span class='author'>&nbsp;&nbsp;&nbsp -- " + idea.author + "</span>";
@@ -79,6 +92,20 @@ function hideIdeaTools(evt) {
 	var ideaNode = evt.currentTarget;
 	$(ideaNode).removeClass("editActive");
 	$(ideaNode).find(".editIcons").css("visibility", "hidden");
+}
+
+function likeIdea() {
+	var id = $(".editActive").attr("id");
+	$.post("/like", {"id" : id}, function() {
+		window.location.href = "/";
+	});
+}
+
+function unlikeIdea() {
+	var id = $(".editActive").attr("id");
+	$.post("/unlike", {"id" : id}, function() {
+		window.location.href = "/";
+	});
 }
 
 function addIdea() {
