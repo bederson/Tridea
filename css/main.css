@@ -23,6 +23,18 @@ a:hover {
     width: 100%;
 }
 
+#topic {
+	font-size: 1.4em;
+	font-weiht: bold;
+	margin-bottom: 0.4em;
+}
+
+#resultsOverview {
+	font-size: 1.2em;
+	font-weiht: bold;
+	margin-bottom: 1.5em;
+}
+
 #ideas {
 	line-height: 1.6em;
 }

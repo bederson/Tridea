@@ -19,185 +19,142 @@ import json
 import webapp2
 import logging
 import datetime
-from google.appengine.ext import db
+from models import *
 from google.appengine.ext.webapp import template
 from google.appengine.api import users
 
-class Idea(db.Model):
-	author = db.UserProperty(auto_current_user_add=True)
-	father = db.SelfReferenceProperty()
-	children = db.ListProperty(db.Key)			# Child ideas of this idea in sorted order by num likes
-	date = db.DateProperty(auto_now=True)
-	idea = db.StringProperty(required=True)
-	likes = db.IntegerProperty(default=0)
-	descLikes = db.IntegerProperty(default=0)
-
-	@property
-	def fatherID(self):
-		if self.father:
-			return self.father.key().id()
-		else:
-			return None
-
-class LikedIdea(db.Model):
-	author = db.UserProperty(auto_current_user_add=True)
-	idea = db.ReferenceProperty(Idea)
-
-def doesLike(ideaObj):
-	like = LikedIdea.all()
-	like = like.filter('author =', users.get_current_user())
-	like = like.filter('idea =', ideaObj)
-	if like.count() > 0:
-		return True
+def get_login_template_values(requestHandler):
+	"""Return a dictionary of template values used for login template"""
+	if users.get_current_user():
+		url = users.create_logout_url(requestHandler.request.uri)
+		url_linktext = 'Logout'
+		logged_in = "true"
 	else:
-		return False
+		url = users.create_login_url(requestHandler.request.uri)
+		url_linktext = 'Login'
+		logged_in = "false"
 
-def doLike(ideaObj):
-	"""If idea not liked by current user, then like it"""
-	if not doesLike(ideaObj):
-		like = LikedIdea()
-		like.idea = ideaObj
-		like.put()
-		ideaObj.likes += 1
-		ideaObj.put()
-		updateAncestorLikes(ideaObj, 1)
+	template_values = {
+		'user': users.get_current_user(),
+		'url': url,
+		'url_linktext': url_linktext,
+		'logged_in': logged_in,
+	}
+	return template_values
 
-def doUnlike(ideaObj):
-	"""If idea liked by current user, then unlike it"""
-	like = LikedIdea.all()
-	like = like.filter('author =', users.get_current_user())
-	like = like.filter('idea =', ideaObj)
-	if like.count() > 0:
-		db.delete(like.get().key())
-		ideaObj.likes -= 1
-		ideaObj.put()
-		updateAncestorLikes(ideaObj, -1)
-
-def updateAncestorLikes(ideaObj, delta):
-	ideaObj.descLikes += delta
-	ideaObj.put()
-	father = ideaObj.father
-	if father:
-		sortChildren(father)		# Maintain sort order of father's children (if there is a father)
-		updateAncestorLikes(father, delta)
-
-def sortChildren(ideaObj):
-	"""Sorts children by number of likes"""
-	def ideaCompareByLikes(key1, key2):
-		i1 = db.get(key1)
-		i2 = db.get(key2)
-		return int(i2.descLikes - i1.descLikes)
-
-	if ideaObj:
-		ideaObj.children.sort(cmp=ideaCompareByLikes)
-		ideaObj.put()
-
-class MainHandler(webapp2.RequestHandler):
+class TopicHandler(webapp2.RequestHandler):
 	def get(self):
-		if users.get_current_user():
-			url = users.create_logout_url(self.request.uri)
-			url_linktext = 'Logout'
-			logged_in = "true"
-		else:
-			url = users.create_login_url(self.request.uri)
-			url_linktext = 'Login'
-			logged_in = "false"
-
-		template_values = {
-			'user': users.get_current_user(),
-			'url': url,
-			'url_linktext': url_linktext,
-			'logged_in': logged_in,
-		}
-
-		path = os.path.join(os.path.dirname(__file__), 'index.html')
+		template_values = get_login_template_values(self)
+		
+		path = os.path.join(os.path.dirname(__file__), 'topic.html')
 		self.response.out.write(template.render(path, template_values))
 
-class Like(webapp2.RequestHandler):
+class IdeaHandler(webapp2.RequestHandler):
+	def get(self):
+		template_values = get_login_template_values(self)
+
+		path = os.path.join(os.path.dirname(__file__), 'idea.html')
+		self.response.out.write(template.render(path, template_values))
+
+class LikeHandler(webapp2.RequestHandler):
 	def post(self):
 		idStr = self.request.get('id')
 		ideaObj = Idea.get_by_id(int(idStr))
-		doLike(ideaObj)
+		ideaObj.doLike()
 
-class Unlike(webapp2.RequestHandler):
+class UnlikeHandler(webapp2.RequestHandler):
 	def post(self):
 		idStr = self.request.get('id')
 		ideaObj = Idea.get_by_id(int(idStr))
-		doUnlike(ideaObj)
+		ideaObj.doUnlike()
 
-class Delete(webapp2.RequestHandler):
+class DeleteHandler(webapp2.RequestHandler):
 	# Deletes idea from hierarchy
 	def post(self):
 		idStr = self.request.get('id')
 		ideaObj = Idea.get_by_id(int(idStr))
-		if ideaObj:
-			fatherObj = ideaObj.father
-			if fatherObj:
-				# Remove self pointer from father
-				fatherObj.children.remove(ideaObj.key())
-				fatherObj.put()
-			# Remove father pointer from children
-			for child in ideaObj.children:
-				childObj = db.get(child)
-				childObj.father = None
-				childObj.put()
-			# Delete self from DB
-			db.delete(ideaObj.key())
-			return self.redirect('/')
+		ideaObj.delete()
 
-class New(webapp2.RequestHandler):
+class NewHandler(webapp2.RequestHandler):
 	# Inserts an idea into hierarchy)
 	def post(self):
 		idea = self.request.get('idea')
 		fatherId = self.request.get('father')
-		ideaObj = Idea(idea=idea)
-		ideaObj.put()
-		if fatherId:
-			fatherObj = Idea.get_by_id(int(fatherId))
-			if fatherObj:
-				ideaObj.father = fatherObj
-				ideaObj.put()
-				# Add self to father
-				fatherObj.children.append(ideaObj.key())
-				fatherObj.put()
-		return self.redirect('/')
+		createIdea(idea=idea, fatherId=fatherId)
+		self.redirect("/")
 
-class Query(webapp2.RequestHandler):
+class QueryTopicsHandler(webapp2.RequestHandler):
+	# Returns all topics in alphabetical order
+	def get(self):
+		ideas = Idea.all().filter("father =", None)
+		count = ideas.count()
+		topicResult = []
+		for ideaObj in ideas:
+			# Build up results dictionary
+			topicJSON = {
+				'id' : ideaObj.key().id(),
+				'author' : ideaObj.author.nickname(),
+				'idea' : ideaObj.idea,
+			}
+			topicResult.append(topicJSON)
+
+		result = {
+			'count' : count, 
+			'topics': topicResult
+		}
+		self.response.headers['Content-Type'] = 'application/json'
+		self.response.out.write(json.dumps(result))
+
+class QueryIdeasHandler(webapp2.RequestHandler):
 	# Returns all notes in depth-first search order
 	def get(self):
 		# Return ideas in depth-first search order
 		# TODO: Make more efficient by storing DFS sort order in DB
-		ideas = Idea.all()
-		count = ideas.count()
-		ideaDict = {}
-		roots = []
-		
-		# Pass 1: Load all idea objects into dictionary, indexed by Key
-		for ideaObj in ideas:
-			ideaKey = ideaObj.key()
-			ideaDict[ideaKey] = ideaObj
-			if ideaObj.father == None:
-				roots.append(ideaKey)
-
-		# Pass 2: Depth first search, using dictionary for random access, produce list of idea objects
-		ideaObjList = self.depthFirstSearch(roots, ideaDict)
-
-		# Pass 3: Go through depth first search order and create JSON
-		ideaResult = []
-		for ideaObj in ideaObjList:
-			# Build up results dictionary
-			ideaJSON = {
-				'id' : ideaObj.key().id(),
-				'author' : ideaObj.author.nickname(),
-				'idea' : ideaObj.idea,
-				'father' : ideaObj.fatherID,
-				'depth' : ideaObj.depth,
-				'doesLike' : doesLike(ideaObj),
-				'likes' : ideaObj.likes
+		# TODO: Make more efficient by only retrieving ideas relevant to this topic
+		topicIdStr = self.request.get("topicId")
+		topicObj = Idea.get_by_id(int(topicIdStr))
+		if topicObj == None:
+			result = {
+				'count' : 0
 			}
-			ideaResult.append(ideaJSON)
+		else:
+			topicKey = topicObj.key()
+			root = [topicKey]
+			ideas = Idea.all()
+			count = 0
+			ideaDict = {}
 
-		result = {'count' : count, 'ideas': ideaResult}
+			# Pass 1: Load all idea objects into dictionary, indexed by Key
+			for ideaObj in ideas:
+				ideaKey = ideaObj.key()
+				ideaDict[ideaKey] = ideaObj
+
+			# Pass 2: Depth first search, using dictionary for random access, produce list of idea objects
+			ideaObjList = self.depthFirstSearch(root, ideaDict)
+
+			# Pass 3: Go through depth first search order and create JSON
+			ideaResult = []
+			for ideaObj in ideaObjList:
+				# Build up results dictionary
+				if not ideaObj.father == None:
+					count += 1
+					ideaJSON = {
+						'id' : ideaObj.key().id(),
+						'author' : ideaObj.author.nickname(),
+						'idea' : ideaObj.idea,
+						'father' : ideaObj.fatherID,
+						'depth' : ideaObj.depth,
+						'doesLike' : ideaObj.doesLike(),
+						'likes' : ideaObj.likes
+					}
+					ideaResult.append(ideaJSON)
+
+			result = {
+				'count' : count, 
+				'topic': topicObj.idea, 
+				'topicId': topicIdStr,
+				'ideas': ideaResult
+			}
 		self.response.headers['Content-Type'] = 'application/json'
 		self.response.out.write(json.dumps(result))
 
@@ -215,10 +172,12 @@ class Query(webapp2.RequestHandler):
 		return ideaObjList
 
 app = webapp2.WSGIApplication([
-	('/', MainHandler),
-	('/delete', Delete),
-	('/new', New),
-	('/q', Query),
-	('/like', Like),
-	('/unlike', Unlike)
+	('/', TopicHandler),
+	('/ideas', IdeaHandler),
+	('/delete', DeleteHandler),
+	('/new', NewHandler),
+	('/qTopics', QueryTopicsHandler),
+	('/qIdeas', QueryIdeasHandler),
+	('/like', LikeHandler),
+	('/unlike', UnlikeHandler)
 ], debug=True)
