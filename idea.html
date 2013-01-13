@@ -6,6 +6,11 @@
 	<script type="text/javascript" src="js/tridea.js"></script>
 	<script type="text/javascript">
 		logged_in = {{ logged_in }};
+		if (logged_in) {
+			user_id = "{{ user.user_id }}";
+		} else {
+			user_id = "";
+		}
 		$(function() {
 			displayIdeas();
 		});
@@ -26,9 +31,13 @@
 	</table>
 	<p>
 	<div id="topic"></div>
-	<div id="resultsOverview">Ideas</div>
+	<div id="results">
+		<span id="resultsOverview"></span> -
+		<span behavior='editable'>
+			<a class='ideaText' id='addIdea' href='javascript:addIdea( {{ topicId }} )'>Add a new one</a>
+		</span>
+	</div>
 	<div id="loading">Loading ...</div>
 	<div id="ideas"></div>
-
   </body>
 </html>

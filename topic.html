@@ -6,6 +6,11 @@
 	<script type="text/javascript" src="js/tridea.js"></script>
 	<script type="text/javascript">
 		logged_in = {{ logged_in }};
+		if (logged_in) {
+			user_id = "{{ user.user_id }}";
+		} else {
+			user_id = "";
+		}
 		$(function() {
 			displayTopics();
 		});
@@ -32,7 +37,7 @@
 	<!-- FORM FOR NEW IDEAS -->
 	<br><br><br>
 	<hr>
-	<h3>Enter new idea:</h3>
+	<h3>Enter a new topic:</h3>
 	<form action="/new" method="post">
 		<div class='formHeading'>
 			<textarea name="idea" rows="3" cols="60"></textarea><br>

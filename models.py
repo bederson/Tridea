@@ -15,6 +15,7 @@
 # limitations under the License.
 #
 
+import logging
 from google.appengine.ext import db
 from google.appengine.api import users
 
@@ -40,11 +41,18 @@ class Idea(db.Model):
 	descLikes = db.IntegerProperty(default=0)
 
 	@property
-	def fatherID(self):
+	def fatherId(self):
 		if self.father:
 			return self.father.key().id()
 		else:
 			return None
+
+	@property
+	def authorId(self):
+		if self.author.user_id():
+			return self.author.user_id()
+		else:
+			return self.author.email()
 
 	def doLike(self):
 		"""If idea not liked by current user, then like it"""

@@ -35,7 +35,11 @@ function displayTopicsImpl(result) {
 			var tools = "<span class='editIcons' style='visibility:hidden; float:left; width:25px'>";
 			tools += "<a href='javascript:deleteIdea()'><img id='ideaDelete' src='/images/trash.png' width='13' height='14' style='float:left; vertical-align:bottom'></a>";
 			tools += "</span>";
-			html += "<div class='idea' id='" + topic.id + "' behavior='editable'>";
+			var editable = "";
+			if (user_id == topic.authorId) {
+				editable = "behavior='editable'";
+			}
+			html += "<div class='idea' id='" + topic.id + "' " + editable + ">";
 			// Topic
 			if (logged_in) {  // Only allow interaction with ideas if logged in
 				html += tools;
@@ -68,7 +72,6 @@ function displayIdeasImpl(result) {
 	if (numIdeas == 0) {
 		var topicId = result['topicId'];
 		var numIdeasStr = 'No ideas yet';
-		numIdeasStr += " - <span class='editActive'><a class='ideaText' id='addIdea' href='javascript:addIdea(" + topicId + ")'>Add the first idea</a></span>";
 	} else if (numIdeas == 1) {
 		var numIdeasStr = '1 Idea';
 	} else {
@@ -83,7 +86,9 @@ function displayIdeasImpl(result) {
 			var idea = ideas[i];
 			// Edit icons at beginning of line
 			var tools = "<span class='editIcons' style='visibility:hidden; float:left; width:105px'>";
-			tools += "<a href='javascript:deleteIdea()'><img id='ideaDelete' src='/images/trash.png' width='13' height='14' style='float:left; vertical-align:bottom'></a>&nbsp;&nbsp;";
+			if (user_id == idea.authorId) {
+				tools += "<a href='javascript:deleteIdea()'><img id='ideaDelete' src='/images/trash.png' width='13' height='14' style='float:left; vertical-align:bottom'></a>&nbsp;&nbsp;";
+			}
 			tools += "<a id='addIdea' href='javascript:addIdea(" + idea.id + ")'>add</a>&nbsp;&nbsp;";
 			if (idea.doesLike) {
 				tools += "<a id='likeIdea' href='javascript:unlikeIdea()'>unlike</a>";
@@ -131,10 +136,10 @@ function enableIdeaTools() {
 	}
 	
 	// Event handlers on ideas
-	$(".idea[behavior=editable]").on("mouseenter", function(evt) {
+	$("[behavior=editable]").on("mouseenter", function(evt) {
 	    showIdeaTools(evt);
 	});
-	$(".idea[behavior=editable]").on("mouseleave", function(evt) {
+	$("[behavior=editable]").on("mouseleave", function(evt) {
 	    hideIdeaTools(evt);
 	});
 }

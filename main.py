@@ -52,6 +52,7 @@ class TopicHandler(webapp2.RequestHandler):
 class IdeaHandler(webapp2.RequestHandler):
 	def get(self):
 		template_values = get_login_template_values(self)
+		template_values['topicId'] = self.request.get("topicId")
 
 		path = os.path.join(os.path.dirname(__file__), 'idea.html')
 		self.response.out.write(template.render(path, template_values))
@@ -94,6 +95,7 @@ class QueryTopicsHandler(webapp2.RequestHandler):
 			topicJSON = {
 				'id' : ideaObj.key().id(),
 				'author' : ideaObj.author.nickname(),
+				'authorId' : ideaObj.authorId,
 				'idea' : ideaObj.idea,
 			}
 			topicResult.append(topicJSON)
@@ -141,8 +143,9 @@ class QueryIdeasHandler(webapp2.RequestHandler):
 					ideaJSON = {
 						'id' : ideaObj.key().id(),
 						'author' : ideaObj.author.nickname(),
+						'authorId' : ideaObj.authorId,
 						'idea' : ideaObj.idea,
-						'father' : ideaObj.fatherID,
+						'father' : ideaObj.fatherId,
 						'depth' : ideaObj.depth,
 						'doesLike' : ideaObj.doesLike(),
 						'likes' : ideaObj.likes
