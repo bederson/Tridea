@@ -2,7 +2,6 @@ NECESSARY
   * Paging model - one Topic per page
   * Allow editing of your own ideas by just clicking on them
     Integrate delete into editing
-  * Require people to log in in order to edit
 
 LATER
   * Make your own ideas appear visually distinct

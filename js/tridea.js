@@ -54,7 +54,9 @@ function displayIdeasImpl(result) {
 
 			// Idea
 			html += "<div class='idea' id='" + idea.id + "' behavior='editable'>";
-			html += tools;
+			if (logged_in) {  // Only allow interaction with ideas if logged in
+				html += tools;
+			}
 			html += likes;
 			html += indent;
 			html += "<span class='ideaText'>" + idea.idea + "</span>";
@@ -68,6 +70,11 @@ function displayIdeasImpl(result) {
 }
 
 function enableIdeaTools() {
+	// Don't allow interaction with ideas if not logged in
+	if (!logged_in) {
+		return;
+	}
+	
 	// Event handlers on ideas
 	$(".idea[behavior=editable]").on("mouseenter", function(evt) {
 	    showIdeaTools(evt);

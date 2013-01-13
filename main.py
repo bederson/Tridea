@@ -97,14 +97,17 @@ class MainHandler(webapp2.RequestHandler):
 		if users.get_current_user():
 			url = users.create_logout_url(self.request.uri)
 			url_linktext = 'Logout'
+			logged_in = "true"
 		else:
 			url = users.create_login_url(self.request.uri)
 			url_linktext = 'Login'
+			logged_in = "false"
 
 		template_values = {
 			'user': users.get_current_user(),
 			'url': url,
 			'url_linktext': url_linktext,
+			'logged_in': logged_in,
 		}
 
 		path = os.path.join(os.path.dirname(__file__), 'index.html')
