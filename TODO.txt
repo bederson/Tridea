@@ -1,10 +1,10 @@
 NECESSARY
   * Allow editing of your own ideas by just clicking on them
     Integrate delete into editing
-
-LATER
   * When deleting idea, promote descendants
   * When deleting topic, delete entire topic
+
+LATER
   * Make your own ideas appear visually distinct
   * Design for mobile
   * SECURITY: Make sure that all user is escaped/safe

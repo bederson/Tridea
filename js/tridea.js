@@ -124,9 +124,9 @@ function displayIdeasImpl(result) {
 			html += "</div>";
 		}
 		$("#ideas").append(html);
-
-		enableIdeaTools();
 	}
+
+	enableIdeaTools();
 }
 
 function enableIdeaTools() {
