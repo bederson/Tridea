@@ -45,6 +45,7 @@ def get_login_template_values(requestHandler):
 class TopicHandler(webapp2.RequestHandler):
 	def get(self):
 		template_values = get_login_template_values(self)
+		template_values['admin'] = users.is_current_user_admin()
 		
 		path = os.path.join(os.path.dirname(__file__), 'topic.html')
 		self.response.out.write(template.render(path, template_values))

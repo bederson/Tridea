@@ -1,0 +1,36 @@
+<html>
+  <head>
+	<title>{% block title %}Tridea{% endblock %}</title>
+	<link type="text/css" rel="stylesheet" href="/css/main.css" />
+	<script type="text/javascript" src="js/jquery-1.8.3.min.js"></script>
+	<script type="text/javascript" src="js/tridea.js"></script>
+	<script type="text/javascript">
+		logged_in = {{ logged_in }};
+		if (logged_in) {
+			user_id = "{{ user.user_id }}";
+		} else {
+			user_id = "";
+		}
+		$(function() {
+			{% block display %}{% endblock %}
+		});
+	</script>
+  </head>
+  <body>
+	<!-- HEADER -->
+	<table class="header" width="100%">
+		<tr>
+			<td width="30%"><a href="/">Tridea</a></td>
+			<td align="middle" width="40%">Tridea: Your ideas, amplified</td>
+			<td align="right" width="30%">
+				{% if user %}
+					{{ user }}
+				{% endif %}
+				<a href="{{ url }}">{{ url_linktext }}</a>
+			</td>
+		</tr>
+	</table>
+	<p>
+	{% block content %}{% endblock %}
+  </body>
+</html>

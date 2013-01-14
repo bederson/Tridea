@@ -3,7 +3,6 @@ NECESSARY
     Integrate delete into editing
 
 LATER
-  * Only let admins enter new ideas
   * When deleting idea, promote descendants
   * When deleting topic, delete entire topic
   * Make your own ideas appear visually distinct
