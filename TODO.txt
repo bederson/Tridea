@@ -1,8 +1,6 @@
 NECESSARY
   * Allow editing of your own ideas by just clicking on them
     Integrate delete into editing
-  * When deleting idea, promote descendants
-  * When deleting topic, delete entire topic
 
 LATER
   * Make your own ideas appear visually distinct

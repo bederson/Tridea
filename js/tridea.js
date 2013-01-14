@@ -176,23 +176,23 @@ function unlikeIdea() {
 }
 
 function addIdea(fatherId) {
+	if ($("#ideaBox").size() > 0) {
+		// Don't do anything if idea box already open
+		return;
+	}
 	disableIdeaTools();
 	
 	$(".editActive").find(".editIcons").css("visibility", "hidden");
 
 	var html = "<div id='ideaAdd'>";
 	html += "<textarea id='ideaBox' type='text'></textarea><br>";
-	html += "<input id='ideaSave' type='button' value='Add Idea'> <a id='ideaCancel' href='javascript:return false'>Cancel</a>";
+	html += "<input id='ideaSave' type='button' value='Add Idea'> <a id='ideaCancel' href='#'>Cancel</a>";
 	html += "</div>";
 	$(".editActive").append(html);
 	var origText = $(".editActive").find(".ideaText").text();
 	var origLeft = $(".editActive").find(".ideaText").position().left;
-	var origWidth = $(".editActive").width() - 200;
-	var origHeight = $(".editActive").height();
 	$("#ideaAdd").css("margin-left", origLeft);
 	$("#ideaBox").val(origText);
-	$("#ideaBox").css("width", "70%");
-	$("#ideaBox").css("height", origHeight);
 	$("#ideaBox").select();
 	$("#ideaBox").focus();
 

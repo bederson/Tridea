@@ -72,10 +72,15 @@ class UnlikeHandler(webapp2.RequestHandler):
 
 class DeleteHandler(webapp2.RequestHandler):
 	# Deletes idea from hierarchy
+	# If top-level "topic", then recursively deletes all descendants
+	# If regular "idea", then promotes descendants
 	def post(self):
 		idStr = self.request.get('id')
 		ideaObj = Idea.get_by_id(int(idStr))
-		ideaObj.delete()
+		if ideaObj.father:
+			ideaObj.deletePromote()
+		else:
+			ideaObj.deleteRecurse()
 
 class NewHandler(webapp2.RequestHandler):
 	# Inserts an idea into hierarchy)

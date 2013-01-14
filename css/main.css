@@ -39,6 +39,11 @@ a:hover {
 	line-height: 1.6em;
 }
 
+#ideaBox {
+	width: 60%;
+	height: 35px;
+}
+
 .author {
 	color: #888;
 }
