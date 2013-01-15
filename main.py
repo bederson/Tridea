@@ -90,6 +90,16 @@ class NewHandler(webapp2.RequestHandler):
 		createIdea(idea=idea, fatherId=fatherId)
 		self.redirect("/")
 
+class EditHandler(webapp2.RequestHandler):
+	# Edits an existing idea
+	def post(self):
+		idea = self.request.get('idea')
+		idStr = self.request.get('id')
+		ideaObj = Idea.get_by_id(int(idStr))
+		if ideaObj:
+			ideaObj.editIdea(idea=idea)
+		self.redirect("/")
+
 class QueryTopicsHandler(webapp2.RequestHandler):
 	# Returns all topics in alphabetical order
 	def get(self):
@@ -185,6 +195,7 @@ app = webapp2.WSGIApplication([
 	('/ideas', IdeaHandler),
 	('/delete', DeleteHandler),
 	('/new', NewHandler),
+	('/edit', EditHandler),
 	('/qTopics', QueryTopicsHandler),
 	('/qIdeas', QueryIdeasHandler),
 	('/like', LikeHandler),

@@ -103,6 +103,10 @@ class Idea(db.Model):
 			self.children.sort(cmp=ideaCompareByLikes)
 			self.put()
 
+	def editIdea(self, idea):
+		self.idea=idea
+		self.put()
+
 	def deletePromote(self):
 		"""Remove self from database, promoting children"""
 		self.doUnlike()
@@ -126,32 +130,25 @@ class Idea(db.Model):
 
 	def deleteRecurse(self):
 		"""Remove self from database, recursively deleteing all descendants as well"""
-		logging.info("DELETER A: self = %d", self.key().id())
 		# First recursively delete descendants
 		for child in self.children:
 			childObj = db.get(child)
 			childObj.deleteRecurse()
 		# Then delete self
 		me = db.get(self.key())  # Necessary to refetch self since previous recursive delete modifies self
-		logging.info("DELETER B: self = %d", me.key().id())
 		me.doUnlike()
 		fatherObj = me.father
 		key = me.key()
 		if fatherObj:
-			logging.info("DELETER C: father = %d", fatherObj.key().id())
 			# Remove self pointer from father
 			fatherObj.children.remove(key)
 			fatherObj.put()
 		# Remove father pointer from children
 		for child in me.children:
-			logging.info("DELETER D: child = %d", child.id())
 			childObj = db.get(child)
-			logging.info("DELETER E: child = %s", childObj)
-			logging.info("DELETER F: child = %d", childKey().id())
 			childObj.father = None
 			childObj.put()
 		# Delete self from DB
-		logging.info("DELETER G: self = %d", key.id())
 		db.delete(key)
 
 class LikedIdea(db.Model):

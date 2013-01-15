@@ -35,11 +35,11 @@ function displayTopicsImpl(result) {
 			var tools = "<span class='editIcons' style='visibility:hidden; float:left; width:25px'>";
 			tools += "<a href='javascript:deleteIdea()'><img id='ideaDelete' src='/images/trash.png' width='13' height='14' style='float:left; vertical-align:bottom'></a>";
 			tools += "</span>";
-			var editable = "";
+			var actionable = "";
 			if (user_id == topic.authorId) {
-				editable = "behavior='editable'";
+				actionable = "behavior='actionable'";
 			}
-			html += "<div class='idea' id='" + topic.id + "' " + editable + ">";
+			html += "<div class='idea' id='" + topic.id + "' " + actionable + ">";
 			// Topic
 			if (logged_in) {  // Only allow interaction with ideas if logged in
 				html += tools;
@@ -85,10 +85,7 @@ function displayIdeasImpl(result) {
 		for (var i=0; i<ideas.length; i++) {
 			var idea = ideas[i];
 			// Edit icons at beginning of line
-			var tools = "<span class='editIcons' style='visibility:hidden; float:left; width:105px'>";
-			if (user_id == idea.authorId) {
-				tools += "<a href='javascript:deleteIdea()'><img id='ideaDelete' src='/images/trash.png' width='13' height='14' style='float:left; vertical-align:bottom'></a>&nbsp;&nbsp;";
-			}
+			var tools = "<span class='editIcons' style='visibility:hidden; float:left; width:75px'>";
 			tools += "<a id='addIdea' href='javascript:addIdea(" + idea.id + ")'>add</a>&nbsp;&nbsp;";
 			if (idea.doesLike) {
 				tools += "<a id='likeIdea' href='javascript:unlikeIdea()'>unlike</a>";
@@ -113,13 +110,17 @@ function displayIdeasImpl(result) {
 			likes += "</span>"
 
 			// Idea
-			html += "<div class='idea' id='" + idea.id + "' behavior='editable'>";
+			html += "<div class='idea' id='" + idea.id + "' behavior='actionable'>";
 			if (logged_in) {  // Only allow interaction with ideas if logged in
 				html += tools;
 			}
+			var editable = "";
+			if (user_id == idea.authorId) {
+				editable = "behavior='editable'";
+			}
 			html += likes;
 			html += indent;
-			html += "<span class='ideaText'>" + idea.idea + "</span>";
+			html += "<span class='ideaText' " + editable + ">" + idea.idea + "</span>";
 			html += "<span class='author'>&nbsp;&nbsp;&nbsp -- " + idea.author + "</span>";
 			html += "</div>";
 		}
@@ -136,17 +137,22 @@ function enableIdeaTools() {
 	}
 	
 	// Event handlers on ideas
-	$("[behavior=editable]").on("mouseenter", function(evt) {
+	$("[behavior=actionable]").on("mouseenter", function(evt) {
 	    showIdeaTools(evt);
 	});
-	$("[behavior=editable]").on("mouseleave", function(evt) {
+	$("[behavior=actionable]").on("mouseleave", function(evt) {
 	    hideIdeaTools(evt);
+	});
+	
+	$(".ideaText[behavior=editable]").on("click", function(evt) {
+		editIdea();
 	});
 }
 
 function disableIdeaTools() {
-	$(".idea[behavior=editable]").off("mouseenter");
-	$(".idea[behavior=editable]").off("mouseleave");
+	$("[behavior=actionable]").off("mouseenter");
+	$("[behavior=actionable]").off("mouseleave");
+	$(".ideaText[behavior=editable]").off("click");
 }
 
 function showIdeaTools(evt) {
@@ -176,24 +182,23 @@ function unlikeIdea() {
 }
 
 function addIdea(fatherId) {
+	// Don't do anything if idea box already open
 	if ($("#ideaBox").size() > 0) {
-		// Don't do anything if idea box already open
 		return;
 	}
 	disableIdeaTools();
-	
 	$(".editActive").find(".editIcons").css("visibility", "hidden");
 
 	var html = "<div id='ideaAdd'>";
 	html += "<textarea id='ideaBox' type='text'></textarea><br>";
-	html += "<input id='ideaSave' type='button' value='Add Idea'> <a id='ideaCancel' href='#'>Cancel</a>";
+	html += "<input id='ideaSave' type='button' value='Add Idea'>&nbsp;&nbsp;"
+	html += "<a id='ideaCancel' href='#'>Cancel</a>";
 	html += "</div>";
 	$(".editActive").append(html);
-	var origText = $(".editActive").find(".ideaText").text();
+//	var origText = $(".editActive").find(".ideaText").text();
 	var origLeft = $(".editActive").find(".ideaText").position().left;
 	$("#ideaAdd").css("margin-left", origLeft);
-	$("#ideaBox").val(origText);
-	$("#ideaBox").select();
+//	$("#ideaBox").val(origText);
 	$("#ideaBox").focus();
 
 	$("#ideaSave").click(function() {
@@ -209,10 +214,55 @@ function addIdea(fatherId) {
 	});
 }
 
+function editIdea() {
+	// Don't do anything if idea box already open
+	if ($("#ideaBox").size() > 0) {
+		return;
+	}
+	disableIdeaTools();
+	$(".editActive").find(".editIcons").css("visibility", "hidden");
+
+	var id = $(".editActive").attr("id");
+	var html = "<div id='ideaAdd' style='position:absolute; background:white'>";
+	html += "<textarea id='ideaBox' type='text'></textarea><br>";
+	html += "<input id='ideaSave' type='button' value='Save Idea'>&nbsp;&nbsp;"
+	html += "<a id='ideaCancel' href='#'>Cancel</a>&nbsp;&nbsp;";
+	html += "<a href='javascript:deleteIdea()'><img id='ideaDelete' src='/images/trash.png' width='13' height='14' style='vertical-align: text-bottom'></a>&nbsp;&nbsp;";
+	html += "</div>";
+	var ideaText = $(".editActive").find(".ideaText");
+	var origText = ideaText.text();
+	ideaText.append(html);
+	var origLeft = ideaText.position().left;
+	var origTop = ideaText.position().top;
+	var ideaAdd = $("#ideaAdd");
+	ideaAdd.css("left", origLeft);
+	ideaAdd.css("top", origTop);
+	var ideaBox = $("#ideaBox");
+	ideaBox.width(ideaText.width());
+	ideaBox.val(origText);
+	ideaBox.select();
+	ideaBox.focus();
+
+	$("#ideaSave").click(function() {
+		var idea = $("#ideaBox").val();
+		var queryStr = {"idea" : idea, "id" : id};
+		$.post("/edit", queryStr, function() {
+			window.location.reload();
+		});
+	});
+
+	$("#ideaCancel").click(function() {
+		cancelAddIdea();
+	});
+}
+
 function cancelAddIdea() {
-	enableIdeaTools();
 	$(".editActive").removeClass("editActive");
 	$("#ideaAdd").remove();
+	// Delay re-enabling tools or else the click that caused this cancel could re-invoke editing
+	setTimeout(function() {
+		enableIdeaTools();
+	}, 100);
 }
 
 function deleteIdea() {

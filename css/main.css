@@ -41,7 +41,7 @@ a:hover {
 
 #ideaBox {
 	width: 60%;
-	height: 35px;
+	height: 25px;
 }
 
 .author {
@@ -50,4 +50,9 @@ a:hover {
 
 .editActive {
 	background-color: #e8f9b6;
+}
+
+[behavior=editable] {
+	text-decoration: underline;
+	cursor: pointer;
 }

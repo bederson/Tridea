@@ -1,9 +1,4 @@
-NECESSARY
-  * Allow editing of your own ideas by just clicking on them
-    Integrate delete into editing
-
 LATER
-  * Make your own ideas appear visually distinct
   * Design for mobile
   * SECURITY: Make sure that all user is escaped/safe
 
