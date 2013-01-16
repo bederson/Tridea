@@ -1,3 +1,20 @@
+POST-ITS
+  * Double-click to create or edit item (or group)
+  * Single-click to select and drag item (or group)
+    - Show trashcan if self
+  * Drag item into, within or out of group
+  * Automatically layout items within group (left-flush with horizontal jitter)
+  * Render groups with random selection of hand-drawn images
+  * Author on mouseover
+  * Like button on mouseover
+  * Display of # likes
+  * Zoom-out view:
+    - shows all groups
+    - drag to reorder groups
+    - Clip to show only first N characters of group label
+    - double-click to edit group label
+    - Mouse over middle of group to show group contents
+
 LATER
   * Consider dynamics
     - Incremental updates
