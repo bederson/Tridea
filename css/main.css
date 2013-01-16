@@ -52,7 +52,7 @@ a:hover {
 	background-color: #e8f9b6;
 }
 
-[behavior=editable] {
+[behavior=editable]:hover {
 	text-decoration: underline;
 	cursor: pointer;
 }

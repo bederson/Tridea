@@ -1,4 +1,13 @@
 LATER
+  * Consider dynamics
+    - Incremental updates
+    - Optional real-time updates (good for projected display)
+    - status of external activity
+      global on top, or by each thread?
+      New ideas, # of likes
+  * Ability to reorganize, including reparenting subtrees
+  * Make it more obvious to log in when try to edit
+  * Add target # of ideas per topic and per person, and show progress with a graph.
   * Design for mobile
   * SECURITY: Make sure that all user is escaped/safe
 
@@ -6,3 +15,7 @@ OPTIONAL
   * Search
      - Click on person to see all ideas by that person
   * Channels to auto-refresh
+  * More encouragement for short contributions (meter, red color when getting long)
+
+BUGS
+  * Pressing save multiple times in a row can save the same item multiple times

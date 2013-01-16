@@ -195,10 +195,10 @@ function addIdea(fatherId) {
 	html += "<a id='ideaCancel' href='#'>Cancel</a>";
 	html += "</div>";
 	$(".editActive").append(html);
-//	var origText = $(".editActive").find(".ideaText").text();
+	var origText = $(".editActive").find(".ideaText").text();
 	var origLeft = $(".editActive").find(".ideaText").position().left;
 	$("#ideaAdd").css("margin-left", origLeft);
-//	$("#ideaBox").val(origText);
+	$("#ideaBox").val(origText);
 	$("#ideaBox").focus();
 
 	$("#ideaSave").click(function() {
