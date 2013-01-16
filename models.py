@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 #
-# Copyright 2007 Google Inc.
+# Copyright 2012 Ben Bederson - http://www.cs.umd.edu/~bederson
+# University of Maryland
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -31,6 +32,11 @@ def createIdea(idea, fatherId):
 			fatherObj.children.append(ideaObj.key())
 			fatherObj.put()
 
+# Topics, Groups and Ideas are all stored by this "Idea"
+# Difference is implicit in group level
+#   Topics have no fathers
+#   Groups always have children
+#   Ideas never have chidlren
 class Idea(db.Model):
 	author = db.UserProperty(auto_current_user_add=True)
 	father = db.SelfReferenceProperty()
@@ -39,6 +45,8 @@ class Idea(db.Model):
 	idea = db.StringProperty(required=True)
 	likes = db.IntegerProperty(default=0)
 	descLikes = db.IntegerProperty(default=0)
+	x = db.IntegerProperty(default=0)
+	y = db.IntegerProperty(default=0)
 
 	@property
 	def fatherId(self):

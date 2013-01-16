@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 #
-# Copyright 2007 Google Inc.
+# Copyright 2012 Ben Bederson - http://www.cs.umd.edu/~bederson
+# University of Maryland
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -53,7 +54,7 @@ class TopicHandler(webapp2.RequestHandler):
 class IdeaHandler(webapp2.RequestHandler):
 	def get(self):
 		template_values = get_login_template_values(self)
-		template_values['topicId'] = self.request.get("topicId")
+		template_values['topicid'] = self.request.get("topicid")
 
 		path = os.path.join(os.path.dirname(__file__), 'idea.html')
 		self.response.out.write(template.render(path, template_values))
@@ -129,8 +130,8 @@ class QueryIdeasHandler(webapp2.RequestHandler):
 		# Return ideas in depth-first search order
 		# TODO: Make more efficient by storing DFS sort order in DB
 		# TODO: Make more efficient by only retrieving ideas relevant to this topic
-		topicIdStr = self.request.get("topicId")
-		topicObj = Idea.get_by_id(int(topicIdStr))
+		topicidStr = self.request.get("topicid")
+		topicObj = Idea.get_by_id(int(topicidStr))
 		if topicObj == None:
 			result = {
 				'count' : 0
@@ -164,14 +165,17 @@ class QueryIdeasHandler(webapp2.RequestHandler):
 						'father' : ideaObj.fatherId,
 						'depth' : ideaObj.depth,
 						'doesLike' : ideaObj.doesLike(),
-						'likes' : ideaObj.likes
+						'likes' : ideaObj.likes,
+						'numChildren' : len(ideaObj.children),
+						'x' : ideaObj.x,
+						'y' : ideaObj.y
 					}
 					ideaResult.append(ideaJSON)
 
 			result = {
 				'count' : count, 
 				'topic': topicObj.idea, 
-				'topicId': topicIdStr,
+				'topicid': topicidStr,
 				'ideas': ideaResult
 			}
 		self.response.headers['Content-Type'] = 'application/json'

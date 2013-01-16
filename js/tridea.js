@@ -1,3 +1,19 @@
+// Copyright 2012 Ben Bederson - http://www.cs.umd.edu/~bederson
+// University of Maryland
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+// 
+//     http://www.apache.org/licenses/LICENSE-2.0
+// 
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+// 
+
 $(function() {
 	// Initialization goes here
 });
@@ -7,10 +23,10 @@ function displayTopics() {
 	$.getJSON("/qTopics", "", displayTopicsImpl)
 }
 
-function displayIdeas(topicId) {
+function displayIdeas(topicid) {
 	$("#loading").css("display", "block");
-	var topicId = getURLParameter("topicId");
-	var queryStr = {"topicId" : topicId};
+	var topicid = getURLParameter("topicid");
+	var queryStr = {"topicid" : topicid};
 	$.getJSON("/qIdeas", queryStr, displayIdeasImpl)
 }
 
@@ -44,7 +60,7 @@ function displayTopicsImpl(result) {
 			if (logged_in) {  // Only allow interaction with ideas if logged in
 				html += tools;
 			}
-			html += "<a class='topicText' href='/ideas?topicId=" + topic.id + "'>" + topic.idea + "</a>";
+			html += "<a class='topicText' href='/ideas?topicid=" + topic.id + "'>" + topic.idea + "</a>";
 			html += "<span class='author'>&nbsp;&nbsp;&nbsp -- " + topic.author + "</span>";
 			html += "</div>";
 		}
@@ -70,7 +86,7 @@ function displayIdeasImpl(result) {
 	var numIdeas = result['count'];
 	var ideas = result['ideas'];
 	if (numIdeas == 0) {
-		var topicId = result['topicId'];
+		var topicid = result['topicid'];
 		var numIdeasStr = 'No ideas yet';
 	} else if (numIdeas == 1) {
 		var numIdeasStr = '1 Idea';
@@ -80,52 +96,69 @@ function displayIdeasImpl(result) {
 	$("#resultsOverview").html(numIdeasStr);
 	$("#topic").html("Topic: " + result['topic']);
 
-	if (numIdeas > 0) {
-		var html = "";
-		for (var i=0; i<ideas.length; i++) {
-			var idea = ideas[i];
-			// Edit icons at beginning of line
-			var tools = "<span class='editIcons' style='visibility:hidden; float:left; width:75px'>";
-			tools += "<a id='addIdea' href='javascript:addIdea(" + idea.id + ")'>add</a>&nbsp;&nbsp;";
-			if (idea.doesLike) {
-				tools += "<a id='likeIdea' href='javascript:unlikeIdea()'>unlike</a>";
-			} else {
-				tools += "<a id='likeIdea' href='javascript:likeIdea()'>like</a>";
-			}
-			tools += "</span>";
+	displayIdeasList(ideas);
+	displayIdeasGrouped(ideas);
+}
 
-			// Indentation for hierarchy
-			var indent = "";
-			if (idea.father != null) {
-				for (var j=1; j<idea.depth; j++) {
-					indent += "<span style='margin-right:15px; color:#bbb'>|</span>";
-				}
-			}
-			
-			// Likes
-			var likes = "<span style='float:left; width:35px'>&nbsp;";
-			if (idea.likes > 0) {
-				likes += idea.likes + "<img src='images/heart.png'> ";
-			}
-			likes += "</span>"
-
-			// Idea
-			html += "<div class='idea' id='" + idea.id + "' behavior='actionable'>";
-			if (logged_in) {  // Only allow interaction with ideas if logged in
-				html += tools;
-			}
-			var editable = "";
-			if (user_id == idea.authorId) {
-				editable = "behavior='editable'";
-			}
-			html += likes;
-			html += indent;
-			html += "<span class='ideaText' " + editable + ">" + idea.idea + "</span>";
-			html += "<span class='author'>&nbsp;&nbsp;&nbsp -- " + idea.author + "</span>";
-			html += "</div>";
+function displayIdeasGrouped(ideas) {
+	var html = "";
+	for (var i=0; i<ideas.length; i++) {
+		var idea = ideas[i];
+		
+		if (idea.numChildren == 0) {
+			console.log("  Idea: " + idea.idea);
+		} else {
+			console.log("Group: " + idea.idea + ", (" + idea.numChildren + " ideas)");
 		}
-		$("#ideas").append(html);
 	}
+	$("#ideaGroups").append(html);
+}
+
+function displayIdeasList(ideas) {
+	var html = "";
+	for (var i=0; i<ideas.length; i++) {
+		var idea = ideas[i];
+		// Edit icons at beginning of line
+		var tools = "<span class='editIcons' style='visibility:hidden; float:left; width:75px'>";
+		tools += "<a id='addIdea' href='javascript:addIdea(" + idea.id + ")'>add</a>&nbsp;&nbsp;";
+		if (idea.doesLike) {
+			tools += "<a id='likeIdea' href='javascript:unlikeIdea()'>unlike</a>";
+		} else {
+			tools += "<a id='likeIdea' href='javascript:likeIdea()'>like</a>";
+		}
+		tools += "</span>";
+
+		// Indentation for hierarchy
+		var indent = "";
+		if (idea.father != null) {
+			for (var j=1; j<idea.depth; j++) {
+				indent += "<span style='margin-right:15px; color:#bbb'>|</span>";
+			}
+		}
+		
+		// Likes
+		var likes = "<span style='float:left; width:35px'>&nbsp;";
+		if (idea.likes > 0) {
+			likes += idea.likes + "<img src='images/heart.png'> ";
+		}
+		likes += "</span>"
+
+		// Idea
+		html += "<div class='idea' id='" + idea.id + "' behavior='actionable'>";
+		if (logged_in) {  // Only allow interaction with ideas if logged in
+			html += tools;
+		}
+		var editable = "";
+		if (user_id == idea.authorId) {
+			editable = "behavior='editable'";
+		}
+		html += likes;
+		html += indent;
+		html += "<span class='ideaText' " + editable + ">" + idea.idea + "</span>";
+		html += "<span class='author'>&nbsp;&nbsp;&nbsp -- " + idea.author + "</span>";
+		html += "</div>";
+	}
+	$("#ideas").append(html);
 
 	enableIdeaTools();
 }
