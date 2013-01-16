@@ -14,9 +14,18 @@
 // limitations under the License.
 // 
 
+var numRects = 7;		// Number of group rectangle images
+var display = "list";
+
 $(function() {
 	// Initialization goes here
 });
+
+function show(display) {
+	var topicid = getURLParameter("topicid");
+	var url = window.location.protocol + "//" + window.location.host + window.location.pathname + "?topicid=" + topicid + "&display=" + display;
+	window.location.replace(url);
+}
 
 function displayTopics() {
 	$("#loading").css("display", "block");
@@ -26,6 +35,7 @@ function displayTopics() {
 function displayIdeas(topicid) {
 	$("#loading").css("display", "block");
 	var topicid = getURLParameter("topicid");
+	display = getURLParameter("display");
 	var queryStr = {"topicid" : topicid};
 	$.getJSON("/qIdeas", queryStr, displayIdeasImpl)
 }
@@ -60,7 +70,7 @@ function displayTopicsImpl(result) {
 			if (logged_in) {  // Only allow interaction with ideas if logged in
 				html += tools;
 			}
-			html += "<a class='topicText' href='/ideas?topicid=" + topic.id + "'>" + topic.idea + "</a>";
+			html += "<a class='topicText' href='/ideas?topicid=" + topic.id + "&display=list'>" + topic.idea + "</a>";
 			html += "<span class='author'>&nbsp;&nbsp;&nbsp -- " + topic.author + "</span>";
 			html += "</div>";
 		}
@@ -96,9 +106,25 @@ function displayIdeasImpl(result) {
 	$("#resultsOverview").html(numIdeasStr);
 	$("#topic").html("Topic: " + result['topic']);
 
-	displayIdeasList(ideas);
-	var groupHTML = displayIdeasGrouped(ideas);
-	$("#ideaGroups").append(groupHTML);
+	if (display == "list") {
+		var listHTML = displayIdeasList(ideas, 0);
+		$("#ideaList").append(listHTML);
+	} else {
+		var groupHTML = displayIdeasGrouped(ideas);
+		$("#ideaGroups").append(groupHTML);
+	}
+	
+	positionFooter();
+	$(window).resize(function() {
+		positionFooter();
+	});
+
+	enableIdeaTools();	
+}
+
+function positionFooter() {
+	var bottom = $(window).height() - 50 + "px";
+	$("#footer").css("top", bottom);
 }
 
 function displayIdeasGrouped(ideas) {
@@ -107,11 +133,9 @@ function displayIdeasGrouped(ideas) {
 		var idea = ideas[i];
 		
 		if (idea.children.length == 0) {
-			console.log("  Idea: " + idea.idea);
 			html += genIdeaHTML(idea, i);
 		} else {
-			console.log("Group: " + idea.idea + ", (" + idea.children.length + " ideas)");
-			html += genGroupHTMLStart(idea);
+			html += genGroupHTMLStart(idea, idea.children.length);
 			html += displayIdeasGrouped(idea.children)
 			html += genGroupHTMLEnd(idea);
 		}
@@ -120,12 +144,15 @@ function displayIdeasGrouped(ideas) {
 	return html;
 }
 
-function genGroupHTMLStart(idea) {
+function genGroupHTMLStart(idea, numChildren) {
 	var html = "";
 	
-	html += "<div class='group' style='position:absolute; left:" + idea.x + "; top:" + idea.y + ";'>";
-	html += "<img src='images/rect7.png' style='position:absolute' width=200 height=150></img>";
-	html += "<span style='position:absolute; left:75px; top:-10px'>" + idea.idea + "</span>";
+	var rectNum = 1 + Math.floor(numRects * Math.random());
+	var rectImageName = "images/rect" + rectNum + ".png";
+	var height = 40 + numChildren * 23;
+	html += "<div class='group draggable' behavior='selectable' style='position:absolute; left:" + idea.x + "px; top:" + idea.y + "px;'>";
+	html += "<img src='" + rectImageName + "' style='position:absolute' width=200px height=" + height + "px></img>";
+	html += "<span class='groupLabel' style='position:absolute; left:75px; top:-10px'>" + idea.idea + "</span>";
 	
 	return html;
 }
@@ -137,16 +164,16 @@ function genGroupHTMLEnd(idea) {
 function genIdeaHTML(idea, i) {
 	var html = "";
 	
-	var x = 50 + Math.floor(Math.random() * 20);
-	var y = 20 + i * 30;
-	html += "<span class='item' style='position:absolute; left:" + x + "; top:" + y + ";'>";
+	var x = 30 + Math.floor(Math.random() * 20);
+	var y = 20 + i * 23;
+	html += "<span class='item draggable' behavior='selectable' style='position:absolute; left:" + x + "px; top:" + y + "px; white-space:nowrap;'>";
 	html += idea.idea;
 	html += "</span>";
 	
 	return html;
 }
 
-function displayIdeasList(ideas) {
+function displayIdeasList(ideas, depth) {
 	var html = "";
 	for (var i=0; i<ideas.length; i++) {
 		var idea = ideas[i];
@@ -162,10 +189,8 @@ function displayIdeasList(ideas) {
 
 		// Indentation for hierarchy
 		var indent = "";
-		if (idea.father != null) {
-			for (var j=1; j<idea.depth; j++) {
-				indent += "<span style='margin-right:15px; color:#bbb'>|</span>";
-			}
+		for (var j=0; j<depth; j++) {
+			indent += "<span style='margin-right:15px; color:#bbb'>|</span>";
 		}
 		
 		// Likes
@@ -189,10 +214,12 @@ function displayIdeasList(ideas) {
 		html += "<span class='ideaText' " + editable + ">" + idea.idea + "</span>";
 		html += "<span class='author'>&nbsp;&nbsp;&nbsp -- " + idea.author + "</span>";
 		html += "</div>";
+		
+		// Process children
+		html += displayIdeasList(idea.children, depth + 1);
 	}
-	$("#ideas").append(html);
 
-	enableIdeaTools();
+	return html;
 }
 
 function enableIdeaTools() {
@@ -211,6 +238,58 @@ function enableIdeaTools() {
 	
 	$(".ideaText[behavior=editable]").on("click", function(evt) {
 		editIdea();
+	});
+	
+	// Single click select
+	$("[behavior=selectable]").on("mousedown", function(evt) {
+		$(".selected").removeClass("selected");  // First remove any existing selection
+		var node = $(this);
+		var nodePos = node.position();
+//		console.log("mouse DOWN: " + "node: " + nodePos.left + ", " + nodePos.top + " mouse: " + evt.pageX + ", " + evt.pageY);
+		node.attr("nodedownx", nodePos.left);
+		node.attr("nodedowny", nodePos.top);
+		node.attr("mousedownx", evt.pageX);
+		node.attr("mousedowny", evt.pageY);
+		$(node).addClass("selected");
+		var itemToHilite = node;
+		if (node.hasClass("group")) {
+			itemToHilite = node.find(".groupLabel");
+		}
+		itemToHilite.addClass("hilited");
+
+		// Drag support
+		$("*").on("mousemove", function(evt) {
+			var node = $(".selected");
+			var nodePos = node.position();
+			var dx = evt.pageX - node.attr("mousedownx");
+			var dy = evt.pageY - node.attr("mousedowny");
+			var x = parseInt(node.attr("nodedownx")) + dx + "px";
+			var y = parseInt(node.attr("nodedowny")) + dy + "px";
+//			console.log("mouse DRAG: " + "node: " + nodePos.left + ", " + nodePos.top + " mouse: " + evt.pageX + ", " + evt.pageY);
+//			console.log("drag: dx = " + dx + ", dy = " + dy + ", x = " + x + ", y = " + y);
+			node.css("left", x);
+			node.css("top", y);
+
+			return false;
+		});
+
+		return false;
+	});
+	$("[behavior=selectable]").on("mouseup", function(evt) {
+//		console.log("mouse UP");
+		var node = $(this);
+		$("*").removeClass("selected");
+		$("*").removeClass("hilited");
+		$("*").off("mousemove");
+
+		return false;
+	});
+
+	// Double click edit
+	$("[behavior=xxx]").on("dblclick", function(evt) {
+		var node = evt.currentTarget;
+		console.log("double click: " + node.text());
+//		$(node).addClass("selected");
 	});
 }
 
