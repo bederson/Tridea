@@ -97,7 +97,8 @@ function displayIdeasImpl(result) {
 	$("#topic").html("Topic: " + result['topic']);
 
 	displayIdeasList(ideas);
-	displayIdeasGrouped(ideas);
+	var groupHTML = displayIdeasGrouped(ideas);
+	$("#ideaGroups").append(groupHTML);
 }
 
 function displayIdeasGrouped(ideas) {
@@ -105,13 +106,44 @@ function displayIdeasGrouped(ideas) {
 	for (var i=0; i<ideas.length; i++) {
 		var idea = ideas[i];
 		
-		if (idea.numChildren == 0) {
+		if (idea.children.length == 0) {
 			console.log("  Idea: " + idea.idea);
+			html += genIdeaHTML(idea, i);
 		} else {
-			console.log("Group: " + idea.idea + ", (" + idea.numChildren + " ideas)");
+			console.log("Group: " + idea.idea + ", (" + idea.children.length + " ideas)");
+			html += genGroupHTMLStart(idea);
+			html += displayIdeasGrouped(idea.children)
+			html += genGroupHTMLEnd(idea);
 		}
 	}
-	$("#ideaGroups").append(html);
+	
+	return html;
+}
+
+function genGroupHTMLStart(idea) {
+	var html = "";
+	
+	html += "<div class='group' style='position:absolute; left:" + idea.x + "; top:" + idea.y + ";'>";
+	html += "<img src='images/rect7.png' style='position:absolute' width=200 height=150></img>";
+	html += "<span style='position:absolute; left:75px; top:-10px'>" + idea.idea + "</span>";
+	
+	return html;
+}
+
+function genGroupHTMLEnd(idea) {
+	return "</div>";
+}
+
+function genIdeaHTML(idea, i) {
+	var html = "";
+	
+	var x = 50 + Math.floor(Math.random() * 20);
+	var y = 20 + i * 30;
+	html += "<span class='item' style='position:absolute; left:" + x + "; top:" + y + ";'>";
+	html += idea.idea;
+	html += "</span>";
+	
+	return html;
 }
 
 function displayIdeasList(ideas) {

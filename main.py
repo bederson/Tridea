@@ -15,6 +15,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 #
+import random
 import os
 import json
 import webapp2
@@ -138,7 +139,7 @@ class QueryIdeasHandler(webapp2.RequestHandler):
 			}
 		else:
 			topicKey = topicObj.key()
-			root = [topicKey]
+			root = topicObj.children
 			ideas = Idea.all()
 			count = 0
 			ideaDict = {}
@@ -149,50 +150,44 @@ class QueryIdeasHandler(webapp2.RequestHandler):
 				ideaDict[ideaKey] = ideaObj
 
 			# Pass 2: Depth first search, using dictionary for random access, produce list of idea objects
-			ideaObjList = self.depthFirstSearch(root, ideaDict)
-
-			# Pass 3: Go through depth first search order and create JSON
-			ideaResult = []
-			for ideaObj in ideaObjList:
-				# Build up results dictionary
-				if not ideaObj.father == None:
-					count += 1
-					ideaJSON = {
-						'id' : ideaObj.key().id(),
-						'author' : ideaObj.author.nickname(),
-						'authorId' : ideaObj.authorId,
-						'idea' : ideaObj.idea,
-						'father' : ideaObj.fatherId,
-						'depth' : ideaObj.depth,
-						'doesLike' : ideaObj.doesLike(),
-						'likes' : ideaObj.likes,
-						'numChildren' : len(ideaObj.children),
-						'x' : ideaObj.x,
-						'y' : ideaObj.y
-					}
-					ideaResult.append(ideaJSON)
+			ideaJSON = self.depthFirstSearch(root, ideaDict)
 
 			result = {
 				'count' : count, 
 				'topic': topicObj.idea, 
 				'topicid': topicidStr,
-				'ideas': ideaResult
+				'ideas': ideaJSON
 			}
 		self.response.headers['Content-Type'] = 'application/json'
 		self.response.out.write(json.dumps(result))
 
 	def depthFirstSearch(self, ideaObjKeys, ideaDict):
-		ideaObjList = []
+		ideaJSON = []
 		for ideaObjKey in ideaObjKeys:
 			ideaObj = ideaDict[ideaObjKey]
 			ideaObj.depth = 0
-			ideaObjList.append(ideaObj)
+			json = self.createIdeaJSON(ideaObj)
+			ideaJSON.append(json)
 			if len(ideaObj.children) > 0:
 				descendants = self.depthFirstSearch(ideaObj.children, ideaDict)
-				for descendant in descendants:
-					descendant.depth += 1
-					ideaObjList.append(descendant)
-		return ideaObjList
+				json['children'] = descendants
+		return ideaJSON
+
+	def createIdeaJSON(self, ideaObj):
+		ideaJSON = {
+			'id' : ideaObj.key().id(),
+			'author' : ideaObj.author.nickname(),
+			'authorId' : ideaObj.authorId,
+			'idea' : ideaObj.idea,
+			'father' : ideaObj.fatherId,
+			'children' : [],
+			'depth' : ideaObj.depth,
+			'doesLike' : ideaObj.doesLike(),
+			'likes' : ideaObj.likes,
+			'x' : random.randint(10, 200),
+			'y' : random.randint(10, 200)
+		}
+		return ideaJSON
 
 app = webapp2.WSGIApplication([
 	('/', TopicHandler),
