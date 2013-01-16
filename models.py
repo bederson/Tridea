@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 #
-# Copyright 2012 Ben Bederson - http://www.cs.umd.edu/~bederson
+# Copyright 2013 Ben Bederson - http://www.cs.umd.edu/~bederson
 # University of Maryland
 #
 # Licensed under the Apache License, Version 2.0 (the "License");

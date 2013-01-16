@@ -1,0 +1,28 @@
+{% extends "base.html" %}
+
+{% block title %}Tridea - Topics{% endblock %}
+
+{% block scripts %}
+	<script type="text/javascript" src="js/topicview.js"></script>
+{% endblock %}
+
+{% block display %}displayTopics();{% endblock %}
+
+{% block content %}
+	<h1 id="resultsOverview">Ideas</h1>
+	<div id="loading">Loading ...</div>
+	<div id="topics"></div>
+	
+	<!-- FORM FOR NEW IDEAS -->
+	{% if admin %}
+	<br><br><br>
+	<hr>
+	<h3>Enter a new topic:</h3>
+	<form action="/new" method="post">
+		<div class='formHeading'>
+			<textarea name="idea" rows="3" cols="60"></textarea><br>
+			<input type="submit" value="Add New Idea">
+		</div>
+	</form>
+	{% endif %}
+{% endblock %}

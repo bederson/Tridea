@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 #
-# Copyright 2012 Ben Bederson - http://www.cs.umd.edu/~bederson
+# Copyright 2013 Ben Bederson - http://www.cs.umd.edu/~bederson
 # University of Maryland
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
@@ -49,15 +49,23 @@ class TopicHandler(webapp2.RequestHandler):
 		template_values = get_login_template_values(self)
 		template_values['admin'] = users.is_current_user_admin()
 		
-		path = os.path.join(os.path.dirname(__file__), 'topic.html')
+		path = os.path.join(os.path.dirname(__file__), 'topicview.html')
 		self.response.out.write(template.render(path, template_values))
 
-class IdeaHandler(webapp2.RequestHandler):
+class IdeaListHandler(webapp2.RequestHandler):
 	def get(self):
 		template_values = get_login_template_values(self)
 		template_values['topicid'] = self.request.get("topicid")
 
-		path = os.path.join(os.path.dirname(__file__), 'idea.html')
+		path = os.path.join(os.path.dirname(__file__), 'listview.html')
+		self.response.out.write(template.render(path, template_values))
+
+class IdeaGraphHandler(webapp2.RequestHandler):
+	def get(self):
+		template_values = get_login_template_values(self)
+		template_values['topicid'] = self.request.get("topicid")
+
+		path = os.path.join(os.path.dirname(__file__), 'graphview.html')
 		self.response.out.write(template.render(path, template_values))
 
 class LikeHandler(webapp2.RequestHandler):
@@ -200,7 +208,8 @@ class QueryIdeasHandler(webapp2.RequestHandler):
 
 app = webapp2.WSGIApplication([
 	('/', TopicHandler),
-	('/ideas', IdeaHandler),
+	('/idealist', IdeaListHandler),
+	('/ideagraph', IdeaGraphHandler),
 	('/delete', DeleteHandler),
 	('/new', NewHandler),
 	('/edit', EditHandler),

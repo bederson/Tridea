@@ -1,0 +1,23 @@
+{% extends "base.html" %}
+
+{% block title %}Tridea - Ideas{% endblock %}
+{% block scripts %}
+	<script type="text/javascript" src="js/graphview.js"></script>
+{% endblock %}
+{% block display %}displayIdeasByGraph();{% endblock %}
+
+{% block content %}
+	<div id="topic"></div>
+	<div id="results">
+		<span id="resultsOverview"></span> -
+		<span behavior='actionable'>
+			<a class='ideaText' id='addIdea' href='javascript:addIdea( {{ topicid }} )'>Add a new one</a>
+		</span>
+	</div>
+	<div id="loading">Loading ...</div>
+	<div id="ideas" style="position:relative;"></div>
+	
+	<div id="footer" align="center" style="position:absolute">
+		<a href="javascript:showView('list')">List View</a>&nbsp;&nbsp;&nbsp;
+	</div>
+{% endblock %}
