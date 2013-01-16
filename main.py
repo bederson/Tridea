@@ -100,7 +100,16 @@ class EditHandler(webapp2.RequestHandler):
 		ideaObj = Idea.get_by_id(int(idStr))
 		if ideaObj:
 			ideaObj.editIdea(idea=idea)
-		self.redirect("/")
+
+class MoveHandler(webapp2.RequestHandler):
+	# Edits an existing idea
+	def post(self):
+		idStr = self.request.get('id')
+		x = int(float(self.request.get('x')))
+		y = int(float(self.request.get('y')))
+		ideaObj = Idea.get_by_id(int(idStr))
+		if ideaObj:
+			ideaObj.moveIdea(x=x, y=y)
 
 class QueryTopicsHandler(webapp2.RequestHandler):
 	# Returns all topics in alphabetical order
@@ -184,8 +193,8 @@ class QueryIdeasHandler(webapp2.RequestHandler):
 			'depth' : ideaObj.depth,
 			'doesLike' : ideaObj.doesLike(),
 			'likes' : ideaObj.likes,
-			'x' : random.randint(10, 200),
-			'y' : random.randint(10, 200)
+			'x' : ideaObj.x,
+			'y' : ideaObj.y
 		}
 		return ideaJSON
 
@@ -195,6 +204,7 @@ app = webapp2.WSGIApplication([
 	('/delete', DeleteHandler),
 	('/new', NewHandler),
 	('/edit', EditHandler),
+	('/move', MoveHandler),
 	('/qTopics', QueryTopicsHandler),
 	('/qIdeas', QueryIdeasHandler),
 	('/like', LikeHandler),

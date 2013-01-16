@@ -108,10 +108,10 @@ function displayIdeasImpl(result) {
 
 	if (display == "list") {
 		var listHTML = displayIdeasList(ideas, 0);
-		$("#ideaList").append(listHTML);
+		$("#ideas").append(listHTML);
 	} else {
 		var groupHTML = displayIdeasGrouped(ideas);
-		$("#ideaGroups").append(groupHTML);
+		$("#ideas").append(groupHTML);
 	}
 	
 	positionFooter();
@@ -122,8 +122,9 @@ function displayIdeasImpl(result) {
 	enableIdeaTools();	
 }
 
+// Put the footer at the bottom of the page
 function positionFooter() {
-	var bottom = $(window).height() - 50 + "px";
+	var bottom = $(window).height() - 30 + "px";
 	$("#footer").css("top", bottom);
 }
 
@@ -133,11 +134,11 @@ function displayIdeasGrouped(ideas) {
 		var idea = ideas[i];
 		
 		if (idea.children.length == 0) {
-			html += genIdeaHTML(idea, i);
+			// Standalone ideas (not in a group)
+			html += genIdeaHTML(idea, idea.x, idea.y);
 		} else {
+			// Group
 			html += genGroupHTMLStart(idea, idea.children.length);
-			html += displayIdeasGrouped(idea.children)
-			html += genGroupHTMLEnd(idea);
 		}
 	}
 	
@@ -145,28 +146,35 @@ function displayIdeasGrouped(ideas) {
 }
 
 function genGroupHTMLStart(idea, numChildren) {
-	var html = "";
-	
+	// Select an image to use for the group
 	var rectNum = 1 + Math.floor(numRects * Math.random());
 	var rectImageName = "images/rect" + rectNum + ".png";
+
+	// First create group
 	var height = 40 + numChildren * 23;
-	html += "<div class='group draggable' behavior='selectable' style='position:absolute; left:" + idea.x + "px; top:" + idea.y + "px;'>";
+	var html = "";
+	html += "<div id='" + idea.id + "' class='group draggable' behavior='selectable' style='position:absolute; left:" + idea.x + "px; top:" + idea.y + "px;'>";
 	html += "<img src='" + rectImageName + "' style='position:absolute' width=200px height=" + height + "px></img>";
-	html += "<span class='groupLabel' style='position:absolute; left:75px; top:-10px'>" + idea.idea + "</span>";
+	html += "<span class='groupLabel editable' style='position:absolute; left:75px; top:-10px'>" + idea.idea + "</span>";
+
+	// Then add children
+	var children = idea.children
+	for (var i=0; i<children.length; i++) {
+		var child = children[i];
+		var x = 30 + Math.floor(Math.random() * 20);
+		var y = 20 + i * 23;
+		html += genIdeaHTML(child, x, y);
+	}
+	
+	html += "</div>";
 	
 	return html;
 }
 
-function genGroupHTMLEnd(idea) {
-	return "</div>";
-}
-
-function genIdeaHTML(idea, i) {
+function genIdeaHTML(idea, x, y) {
 	var html = "";
-	
-	var x = 30 + Math.floor(Math.random() * 20);
-	var y = 20 + i * 23;
-	html += "<span class='item draggable' behavior='selectable' style='position:absolute; left:" + x + "px; top:" + y + "px; white-space:nowrap;'>";
+
+	html += "<span id='" + idea.id + "' class='item draggable editable' behavior='selectable' style='position:absolute; left:" + x + "px; top:" + y + "px; white-space:nowrap;'>";
 	html += idea.idea;
 	html += "</span>";
 	
@@ -240,12 +248,15 @@ function enableIdeaTools() {
 		editIdea();
 	});
 	
-	// Single click select
+	// Single click select (with Drag)
+	$("*").on("mousedown", function(evt) {
+		saveAndCloseIdeaVis();
+		$("*").removeClass("selected");		// First remove any existing selection
+		$("*").removeClass("hilited");		// Remove any hiliting
+	});
 	$("[behavior=selectable]").on("mousedown", function(evt) {
-		$(".selected").removeClass("selected");  // First remove any existing selection
 		var node = $(this);
 		var nodePos = node.position();
-//		console.log("mouse DOWN: " + "node: " + nodePos.left + ", " + nodePos.top + " mouse: " + evt.pageX + ", " + evt.pageY);
 		node.attr("nodedownx", nodePos.left);
 		node.attr("nodedowny", nodePos.top);
 		node.attr("mousedownx", evt.pageX);
@@ -263,33 +274,35 @@ function enableIdeaTools() {
 			var nodePos = node.position();
 			var dx = evt.pageX - node.attr("mousedownx");
 			var dy = evt.pageY - node.attr("mousedowny");
-			var x = parseInt(node.attr("nodedownx")) + dx + "px";
-			var y = parseInt(node.attr("nodedowny")) + dy + "px";
-//			console.log("mouse DRAG: " + "node: " + nodePos.left + ", " + nodePos.top + " mouse: " + evt.pageX + ", " + evt.pageY);
-//			console.log("drag: dx = " + dx + ", dy = " + dy + ", x = " + x + ", y = " + y);
-			node.css("left", x);
-			node.css("top", y);
+			var x = parseInt(node.attr("nodedownx")) + dx;
+			var y = parseInt(node.attr("nodedowny")) + dy;
+			if (y < 0) y = 0;
+			node.css("left", x + "px");
+			node.css("top", y + "px");
+			node.addClass("moved");
 
 			return false;
 		});
 
 		return false;
 	});
+	// Mouse up ends drag
 	$("[behavior=selectable]").on("mouseup", function(evt) {
-//		console.log("mouse UP");
 		var node = $(this);
 		$("*").removeClass("selected");
-		$("*").removeClass("hilited");
 		$("*").off("mousemove");
+
+		if (node.hasClass("moved")) {
+			node.removeClass("moved");
+			savePosition(node);
+		}
 
 		return false;
 	});
 
-	// Double click edit
-	$("[behavior=xxx]").on("dblclick", function(evt) {
-		var node = evt.currentTarget;
-		console.log("double click: " + node.text());
-//		$(node).addClass("selected");
+	// Double click to edit
+	$(".editable").on("dblclick", function(evt) {
+		editIdeaVis($(this));
 	});
 }
 
@@ -323,6 +336,64 @@ function unlikeIdea() {
 	$.post("/unlike", {"id" : id}, function() {
 		window.location.reload();
 	});
+}
+
+function savePosition(idea) {
+	var pos = idea.position();
+	var queryStr = {
+		"id" : idea[0].id,
+		"x" : pos.left,
+		"y" : pos.top
+	};
+	$.post("/move", queryStr);
+}
+
+function editIdeaVis(node) {
+	// Don't do anything if idea box already open
+	if ($("#ideaBoxVis").size() > 0) {
+		saveAndCloseIdeaVis();
+	}
+
+	node.addClass("editing");
+	var id = node.attr("id");
+	var origText = node.text();
+	var origLeft = node.position().left;
+	var origTop = node.position().top;
+	var html = "<input type='text' id='ideaBoxVis' style='position:absolute' type='text'></textarea>";
+	node.append(html);
+	var ideaBox = $("#ideaBoxVis");
+	ideaBox.css("left", 0);
+	ideaBox.css("top", 0);
+	ideaBox.width(node.width());
+	ideaBox.val(origText);
+	ideaBox.focus();
+	ideaBox.on("keypress", function(evt) {
+		if (evt.keyCode == 13) {
+			// Return key
+			saveAndCloseIdeaVis();
+		}
+	});
+}
+
+function saveAndCloseIdeaVis() {
+	var ideaBox = $("#ideaBoxVis");
+	if (ideaBox.length > 0) {
+		var node = $(".editing");
+		var text = ideaBox.val();
+		if (node.hasClass("groupLabel")) {
+			var id = node.parent().attr("id");
+		} else {
+			var id = node.attr("id");
+		}
+		node.html(text);
+		node.removeClass("editing");
+
+		var queryStr = {"idea" : text, "id" : id};
+		$.post("/edit", queryStr);
+
+		$("*").removeClass("selected");		// First remove any existing selection
+		$("*").removeClass("hilited");		// Remove any hiliting
+	}
 }
 
 function addIdea(fatherId) {

@@ -92,6 +92,15 @@ a:hover {
 	user-select: none;
 }
 
+#ideaBoxVis {
+	background-color: #F8F794;
+	padding-left: 7px;
+	padding-right: 7px;
+	padding-top: 2px;
+	padding-bottom: 2px;	
+	border-radius: 7px;
+}
+
 .hilited {
 	border-width: 1px;
 	border-style: solid;

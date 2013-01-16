@@ -114,6 +114,11 @@ class Idea(db.Model):
 	def editIdea(self, idea):
 		self.idea=idea
 		self.put()
+		
+	def moveIdea(self, x, y):
+		self.x = x
+		self.y = y
+		self.put()
 
 	def deletePromote(self):
 		"""Remove self from database, promoting children"""
