@@ -3,6 +3,7 @@
 {% block title %}Tridea - Ideas{% endblock %}
 {% block scripts %}
 	<script type="text/javascript" src="js/graphview.js"></script>
+	<link href='http://fonts.googleapis.com/css?family=Cabin+Sketch' rel='stylesheet' type='text/css'>
 {% endblock %}
 {% block display %}displayIdeasByGraph();{% endblock %}
 
@@ -11,7 +12,7 @@
 	<div id="results">
 		<span id="resultsOverview"></span> -
 		<span behavior='actionable'>
-			<a class='ideaText' id='addIdea' href='javascript:addIdea( {{ topicid }} )'>Add a new one</a>
+			<a class='ideaText' id='addIdea' href='javascript:addIdeaVis( {{ topicid }} )'>Add a new one</a>
 		</span>
 	</div>
 	<div id="loading">Loading ...</div>

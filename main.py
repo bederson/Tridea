@@ -97,8 +97,17 @@ class NewHandler(webapp2.RequestHandler):
 	def post(self):
 		idea = self.request.get('idea')
 		fatherId = self.request.get('father')
-		createIdea(idea=idea, fatherId=fatherId)
-		self.redirect("/")
+		ideaObj = createIdea(idea=idea, fatherId=fatherId)
+
+		if ideaObj:
+			idStr = ideaobj.key().id()
+		else:
+			idStr = ""
+		result = {
+			'id' : idStr
+		}
+		self.response.headers['Content-Type'] = 'application/json'
+		self.response.out.write(json.dumps(result))
 
 class EditHandler(webapp2.RequestHandler):
 	# Edits an existing idea

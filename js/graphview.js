@@ -48,7 +48,7 @@ function genGroupHTMLStart(idea, numChildren) {
 	for (var i=0; i<children.length; i++) {
 		var child = children[i];
 		var x = 30 + Math.floor(Math.random() * 20);
-		var y = 20 + i * 23;
+		var y = 20 + i * 28;
 		html += genIdeaHTML(child, x, y);
 	}
 	
@@ -75,6 +75,26 @@ function savePosition(idea) {
 		"y" : pos.top
 	};
 	$.post("/move", queryStr);
+}
+
+function addIdeaVis(fatherId) {
+	// Don't do anything if idea box already open
+	if ($("#ideaBoxVis").size() > 0) {
+		saveAndCloseIdeaVis();
+	}
+	
+	var ideas = $("#ideas");
+	var text = "New idea";
+	var html = genIdeaHTML(text, 50, 50);
+	console.log(html);
+	ideas.append(html);
+
+	var queryStr = {"idea" : text, "father" : fatherId};
+	$.post("/new", queryStr, function() {
+		window.location.reload();
+	});
+
+//	editIdeaVis(idea);
 }
 
 function editIdeaVis(node) {

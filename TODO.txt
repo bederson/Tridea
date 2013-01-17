@@ -1,3 +1,7 @@
+Variable space between ideas
+First idea should be to the right of other ideas
+Friends view
+
 POST-ITS
   * Double-click to create or edit item (or group)
   * Single-click to select and drag item (or group)

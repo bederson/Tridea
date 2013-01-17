@@ -21,6 +21,9 @@ from google.appengine.ext import db
 from google.appengine.api import users
 
 def createIdea(idea, fatherId):
+	if not users.get_current_user():
+		return None
+
 	ideaObj = Idea(idea=idea)
 	ideaObj.put()
 	if fatherId:
@@ -31,6 +34,7 @@ def createIdea(idea, fatherId):
 			# Add self to father
 			fatherObj.children.append(ideaObj.key())
 			fatherObj.put()
+	return ideaObj
 
 # Topics, Groups and Ideas are all stored by this "Idea"
 # Difference is implicit in group level
