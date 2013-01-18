@@ -14,8 +14,17 @@
 // limitations under the License.
 // 
 
+function displayIdeasByList() {
+	display = "list";
+	displayIdeas();
+}
 
-function displayIdeasList(ideas, depth) {
+function displayIdeasList(ideas) {
+	html = displayIdeasListRecurse(ideas, 0);
+	$("#ideas").append(html);
+}
+
+function displayIdeasListRecurse(ideas, depth) {
 	var html = "";
 	for (var i=0; i<ideas.length; i++) {
 		var idea = ideas[i];
@@ -58,7 +67,7 @@ function displayIdeasList(ideas, depth) {
 		html += "</div>";
 		
 		// Process children
-		html += displayIdeasList(idea.children, depth + 1);
+		html += displayIdeasListRecurse(idea.children, depth + 1);
 	}
 
 	return html;

@@ -100,7 +100,7 @@ class NewHandler(webapp2.RequestHandler):
 		ideaObj = createIdea(idea=idea, fatherId=fatherId)
 
 		if ideaObj:
-			idStr = ideaobj.key().id()
+			idStr = ideaObj.key().id()
 		else:
 			idStr = ""
 		result = {
@@ -167,7 +167,6 @@ class QueryIdeasHandler(webapp2.RequestHandler):
 			topicKey = topicObj.key()
 			root = topicObj.children
 			ideas = Idea.all()
-			count = 0
 			ideaDict = {}
 
 			# Pass 1: Load all idea objects into dictionary, indexed by Key
@@ -176,7 +175,7 @@ class QueryIdeasHandler(webapp2.RequestHandler):
 				ideaDict[ideaKey] = ideaObj
 
 			# Pass 2: Depth first search, using dictionary for random access, produce list of idea objects
-			ideaJSON = self.depthFirstSearch(root, ideaDict)
+			ideaJSON, count = self.depthFirstSearch(root, ideaDict)
 
 			result = {
 				'count' : count, 
@@ -188,6 +187,7 @@ class QueryIdeasHandler(webapp2.RequestHandler):
 		self.response.out.write(json.dumps(result))
 
 	def depthFirstSearch(self, ideaObjKeys, ideaDict):
+		count = 0
 		ideaJSON = []
 		for ideaObjKey in ideaObjKeys:
 			ideaObj = ideaDict[ideaObjKey]
@@ -195,9 +195,12 @@ class QueryIdeasHandler(webapp2.RequestHandler):
 			json = self.createIdeaJSON(ideaObj)
 			ideaJSON.append(json)
 			if len(ideaObj.children) > 0:
-				descendants = self.depthFirstSearch(ideaObj.children, ideaDict)
+				descendants, numd = self.depthFirstSearch(ideaObj.children, ideaDict)
 				json['children'] = descendants
-		return ideaJSON
+				count += numd
+			else:
+				count += 1
+		return ideaJSON, count
 
 	def createIdeaJSON(self, ideaObj):
 		ideaJSON = {
@@ -223,8 +226,8 @@ app = webapp2.WSGIApplication([
 	('/new', NewHandler),
 	('/edit', EditHandler),
 	('/move', MoveHandler),
-	('/qTopics', QueryTopicsHandler),
-	('/qIdeas', QueryIdeasHandler),
+	('/qtopics', QueryTopicsHandler),
+	('/qideas', QueryIdeasHandler),
 	('/like', LikeHandler),
 	('/unlike', UnlikeHandler)
 ], debug=True)

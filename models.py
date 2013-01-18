@@ -116,8 +116,11 @@ class Idea(db.Model):
 			self.put()
 
 	def editIdea(self, idea):
-		self.idea=idea
-		self.put()
+		if idea == "":
+			self.deletePromote()
+		else:
+			self.idea=idea
+			self.put()
 		
 	def moveIdea(self, x, y):
 		self.x = x
@@ -127,6 +130,8 @@ class Idea(db.Model):
 	def deletePromote(self):
 		"""Remove self from database, promoting children"""
 		self.doUnlike()
+		x = self.x
+		y = self.y
 		fatherObj = self.father
 		key = self.key()
 		if fatherObj:
@@ -137,10 +142,13 @@ class Idea(db.Model):
 			for child in self.children:
 				fatherObj.children.append(child)
 				fatherObj.put()
-		# Change father pointer from children
+		# Change father pointer from children, and update children's position
 		for child in self.children:
 			childObj = db.get(child)
 			childObj.father = fatherObj
+			childObj.x = x
+			childObj.y = y
+			y += 25
 			childObj.put()
 		# Delete self from DB
 		db.delete(key)

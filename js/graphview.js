@@ -14,6 +14,11 @@
 // limitations under the License.
 // 
 
+function displayIdeasByGraph() {
+	display = "graph";	
+	displayIdeas();
+}
+
 function displayIdeasGrouped(ideas) {
 	var html = "";
 	for (var i=0; i<ideas.length; i++) {
@@ -21,14 +26,15 @@ function displayIdeasGrouped(ideas) {
 		
 		if (idea.children.length == 0) {
 			// Standalone ideas (not in a group)
-			html += genIdeaHTML(idea, idea.x, idea.y);
+			html += genIdeaHTML(idea.idea, idea.id, idea.x, idea.y);
 		} else {
 			// Group
 			html += genGroupHTMLStart(idea, idea.children.length);
 		}
 	}
-	
-	return html;
+
+	$("#ideas").append(html);
+	createEventHandlers();
 }
 
 function genGroupHTMLStart(idea, numChildren) {
@@ -41,7 +47,7 @@ function genGroupHTMLStart(idea, numChildren) {
 	var html = "";
 	html += "<div id='" + idea.id + "' class='group draggable' behavior='selectable' style='position:absolute; left:" + idea.x + "px; top:" + idea.y + "px;'>";
 	html += "<img src='" + rectImageName + "' style='position:absolute' width=200px height=" + height + "px></img>";
-	html += "<span class='groupLabel editable' style='position:absolute; left:75px; top:-10px'>" + idea.idea + "</span>";
+	html += "<span class='groupLabel editable' style='position:absolute; left:50px; top:-10px; white-space:nowrap;'>" + idea.idea + "</span>";
 
 	// Then add children
 	var children = idea.children
@@ -49,7 +55,7 @@ function genGroupHTMLStart(idea, numChildren) {
 		var child = children[i];
 		var x = 30 + Math.floor(Math.random() * 20);
 		var y = 20 + i * 28;
-		html += genIdeaHTML(child, x, y);
+		html += genIdeaHTML(child.idea, child.id, x, y);
 	}
 	
 	html += "</div>";
@@ -57,11 +63,11 @@ function genGroupHTMLStart(idea, numChildren) {
 	return html;
 }
 
-function genIdeaHTML(idea, x, y) {
+function genIdeaHTML(text, id, x, y) {
 	var html = "";
 
-	html += "<span id='" + idea.id + "' class='item draggable editable' behavior='selectable' style='position:absolute; left:" + x + "px; top:" + y + "px; white-space:nowrap;'>";
-	html += idea.idea;
+	html += "<span id='" + id + "' class='item draggable editable' behavior='selectable' style='position:absolute; left:" + x + "px; top:" + y + "px; white-space:nowrap;'>";
+	html += text;
 	html += "</span>";
 	
 	return html;
@@ -78,32 +84,38 @@ function savePosition(idea) {
 }
 
 function addIdeaVis(fatherId) {
-	// Don't do anything if idea box already open
+	// Save any open idea boxes
 	if ($("#ideaBoxVis").size() > 0) {
 		saveAndCloseIdeaVis();
 	}
 	
 	var ideas = $("#ideas");
 	var text = "New idea";
-	var html = genIdeaHTML(text, 50, 50);
-	console.log(html);
+	var html = genIdeaHTML(text, "newIdea", 50, 50);
 	ideas.append(html);
+	editIdeaVis($("#newIdea"));
 
 	var queryStr = {"idea" : text, "father" : fatherId};
-	$.post("/new", queryStr, function() {
-		window.location.reload();
+	$.post("/new", queryStr, function(result) {
+		if (result.id == "") {
+			// Failed to create object
+			$("#newIdea").remove();
+		} else {
+			$("#newIdea").attr("id", result.id);
+			createEventHandlers();
+			$("#ideaBoxVis").select();
+		}
 	});
-
-//	editIdeaVis(idea);
 }
 
 function editIdeaVis(node) {
-	// Don't do anything if idea box already open
+	// Save any open idea boxes
 	if ($("#ideaBoxVis").size() > 0) {
 		saveAndCloseIdeaVis();
 	}
 
 	node.addClass("editing");
+	node.removeClass("hilited");
 	var id = node.attr("id");
 	var origText = node.text();
 	var origLeft = node.position().left;
@@ -143,4 +155,90 @@ function saveAndCloseIdeaVis() {
 		$("*").removeClass("selected");		// First remove any existing selection
 		$("*").removeClass("hilited");		// Remove any hiliting
 	}
+}
+
+function deleteIdea(node) {
+	if (node.length > 0) {
+		if (node.hasClass("groupLabel")) {
+			node = node.parent();
+		}
+		var id = node.attr("id");
+		node.remove();
+		$.post("/delete", {"id" : id}, function() {
+			window.location.reload();   // Necessary to show promoted notes
+		});
+	}
+}
+
+// EVENT HANDLERS
+function createEventHandlers() {
+	// Single click select (with Drag)
+	$("*").on("mousedown", function(evt) {
+		saveAndCloseIdeaVis();
+		$("*").removeClass("selected");		// First remove any existing selection
+		$("*").removeClass("hilited");		// Remove any hiliting
+	});
+	
+	$("[behavior=selectable]").on("mousedown", function(evt) {
+		var node = $(this);
+		var nodePos = node.position();
+		node.attr("nodedownx", nodePos.left);
+		node.attr("nodedowny", nodePos.top);
+		node.attr("mousedownx", evt.pageX);
+		node.attr("mousedowny", evt.pageY);
+		$(node).addClass("selected");
+		var itemToHilite = node;
+		if (node.hasClass("group")) {
+			itemToHilite = node.find(".groupLabel");
+		}
+		itemToHilite.addClass("hilited");
+
+		// Key support on selected items
+		$("*").on("keydown", function(evt) {
+			var kc = evt.keyCode;
+			if ((kc == 8) || (kc == 46)) {  // Delete keys
+				var node = $(".hilited");
+				if (node.length > 0) {
+					deleteIdea($(".hilited"));
+					evt.preventDefault();
+				}
+			}
+		});
+
+		// Drag support
+		$("*").on("mousemove", function(evt) {
+			var node = $(".selected");
+			var nodePos = node.position();
+			var dx = evt.pageX - node.attr("mousedownx");
+			var dy = evt.pageY - node.attr("mousedowny");
+			var x = parseInt(node.attr("nodedownx")) + dx;
+			var y = parseInt(node.attr("nodedowny")) + dy;
+			if (y < 0) y = 0;
+			node.css("left", x + "px");
+			node.css("top", y + "px");
+			node.addClass("moved");
+
+			return false;
+		});
+
+		return false;
+	});
+	// Mouse up ends drag
+	$("[behavior=selectable]").on("mouseup", function(evt) {
+		var node = $(this);
+		$("*").removeClass("selected");
+		$("*").off("mousemove");
+
+		if (node.hasClass("moved")) {
+			node.removeClass("moved");
+			savePosition(node);
+		}
+
+		return false;
+	});
+
+	// Double click to edit
+	$(".editable").on("dblclick", function(evt) {
+		editIdeaVis($(this));
+	});
 }

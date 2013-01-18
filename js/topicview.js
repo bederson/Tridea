@@ -14,6 +14,11 @@
 // limitations under the License.
 // 
 
+function displayTopics() {
+	$("#loading").css("display", "block");
+	$.getJSON("/qtopics", "", displayTopicsImpl)
+}
+
 function displayTopicsImpl(result) {
 	$("#loading").css("display", "none");
 

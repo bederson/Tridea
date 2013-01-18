@@ -18,6 +18,7 @@ $(function() {
 	// Initialization goes here
 });
 
+// Load the page with the requested view
 function showView(display) {
 	var topicid = getURLParameter("topicid");
 	if (display == "list") {
@@ -30,21 +31,6 @@ function showView(display) {
 	window.location.replace(url);
 }
 
-function displayTopics() {
-	$("#loading").css("display", "block");
-	$.getJSON("/qTopics", "", displayTopicsImpl)
-}
-
-function displayIdeasByList() {
-	display = "list";
-	displayIdeas();
-}
-
-function displayIdeasByGraph() {
-	display = "graph";	
-	displayIdeas();
-}
-
 function displayIdeas() {
 	$("#loading").css("display", "block");
 	var topicid = getURLParameter("topicid");
@@ -55,7 +41,7 @@ function displayIdeas() {
 		positionFooter();
 	});
 
-	$.getJSON("/qIdeas", queryStr, displayIdeasImpl)
+	$.getJSON("/qideas", queryStr, displayIdeasImpl)
 }
 
 function displayIdeasImpl(result) {
@@ -75,11 +61,9 @@ function displayIdeasImpl(result) {
 	$("#topic").html("Topic: " + result['topic']);
 
 	if (display == "list") {
-		var listHTML = displayIdeasList(ideas, 0);
-		$("#ideas").append(listHTML);
+		displayIdeasList(ideas);
 	} else {
-		var groupHTML = displayIdeasGrouped(ideas);
-		$("#ideas").append(groupHTML);
+		displayIdeasGrouped(ideas);
 	}
 	
 	enableIdeaTools();	
@@ -108,65 +92,8 @@ function enableIdeaTools() {
 	$(".ideaText[behavior=editable]").on("click", function(evt) {
 		editIdea();
 	});
-	
-	// Single click select (with Drag)
-	$("*").on("mousedown", function(evt) {
-		saveAndCloseIdeaVis();
-		$("*").removeClass("selected");		// First remove any existing selection
-		$("*").removeClass("hilited");		// Remove any hiliting
-	});
-	$("[behavior=selectable]").on("mousedown", function(evt) {
-		var node = $(this);
-		var nodePos = node.position();
-		node.attr("nodedownx", nodePos.left);
-		node.attr("nodedowny", nodePos.top);
-		node.attr("mousedownx", evt.pageX);
-		node.attr("mousedowny", evt.pageY);
-		$(node).addClass("selected");
-		var itemToHilite = node;
-		if (node.hasClass("group")) {
-			itemToHilite = node.find(".groupLabel");
-		}
-		itemToHilite.addClass("hilited");
-
-		// Drag support
-		$("*").on("mousemove", function(evt) {
-			var node = $(".selected");
-			var nodePos = node.position();
-			var dx = evt.pageX - node.attr("mousedownx");
-			var dy = evt.pageY - node.attr("mousedowny");
-			var x = parseInt(node.attr("nodedownx")) + dx;
-			var y = parseInt(node.attr("nodedowny")) + dy;
-			if (y < 0) y = 0;
-			node.css("left", x + "px");
-			node.css("top", y + "px");
-			node.addClass("moved");
-
-			return false;
-		});
-
-		return false;
-	});
-	// Mouse up ends drag
-	$("[behavior=selectable]").on("mouseup", function(evt) {
-		var node = $(this);
-		$("*").removeClass("selected");
-		$("*").off("mousemove");
-
-		if (node.hasClass("moved")) {
-			node.removeClass("moved");
-			savePosition(node);
-		}
-
-		return false;
-	});
-
-	// Double click to edit
-	$(".editable").on("dblclick", function(evt) {
-		editIdeaVis($(this));
-	});
 }
-
+	
 function disableIdeaTools() {
 	$("[behavior=actionable]").off("mouseenter");
 	$("[behavior=actionable]").off("mouseleave");
