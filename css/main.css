@@ -35,75 +35,7 @@ a:hover {
 	margin-bottom: 1.5em;
 }
 
-#ideas {
-	line-height: 1.6em;
-}
-
-#ideaBox {
-	width: 60%;
-	height: 25px;
-}
-
-.author {
-	color: #888;
-}
-
-.editActive {
-	background-color: #e8f9b6;
-}
-
 [behavior=editable]:hover {
 	text-decoration: underline;
 	cursor: pointer;
-}
-
-.group {
-}
-
-.groupLabel {
-	font-weight: bold;
-	border-radius: 7px;
-	cursor: move;
-
-	/* Disable selection label text */
-	-webkit-touch-callout: none;
-	-webkit-user-select: none;
-	-khtml-user-select: none;
-	-moz-user-select: none;
-	-ms-user-select: none;
-	user-select: none;
-}
-
-.item {
-	font-family: 'Cabin Sketch', cursive;
-	font-size: 1.4em;
-	background-color: #F8F794;
-	padding-left: 7px;
-	padding-right: 7px;
-	padding-top: 2px;
-	padding-bottom: 2px;
-	border-radius: 7px;
-	cursor: move;
-
-	/* Disable selection label text */
-	-webkit-touch-callout: none;
-	-webkit-user-select: none;
-	-khtml-user-select: none;
-	-moz-user-select: none;
-	-ms-user-select: none;
-	user-select: none;
-}
-
-#ideaBoxVis {
-	background-color: #F8F794;
-	padding-left: 7px;
-	padding-right: 7px;
-	padding-top: 2px;
-	padding-bottom: 2px;	
-	border-radius: 7px;
-}
-
-.hilited {
-	border-width: 1px;
-	border-style: solid;
 }

@@ -12,7 +12,15 @@
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
-// 
+//
+
+// CONSTANTS
+var itemHeight = 28;
+var groupVGap = 23;
+var groupVMargin = 20;
+var groupHMargin = 15;
+var groupHorVar = 20;
+var groupVerVar = 3;
 
 function displayIdeasByGraph() {
 	display = "graph";	
@@ -29,37 +37,56 @@ function displayIdeasGrouped(ideas) {
 			html += genIdeaHTML(idea.idea, idea.id, idea.x, idea.y);
 		} else {
 			// Group
-			html += genGroupHTMLStart(idea, idea.children.length);
+			html += genGroupHTML(idea, idea.children.length);
 		}
 	}
 
 	$("#ideas").append(html);
 	createEventHandlers();
+	
+	// Update bounds of each group
+	var groups = $(".group");
+	groups.each(function() {
+		updateGroupBounds($(this));
+	});
 }
 
-function genGroupHTMLStart(idea, numChildren) {
+function genGroupHTML(idea, numChildren) {
+	var children = idea.children;
+	var numChildren = children.length;
+
 	// Select an image to use for the group
 	var rectNum = 1 + Math.floor(numRects * Math.random());
 	var rectImageName = "images/rect" + rectNum + ".png";
 
 	// First create group
-	var height = 40 + numChildren * 23;
+	var vgaps = [];
+	var vgap = 0;
+	for (var i=0; i<numChildren; i++) {
+		gap = Math.ceil(Math.random() * groupVerVar);
+		vgaps[i] = gap;
+		vgap += gap;
+	}
+	var height = (2 * groupVMargin) + numChildren * itemHeight + vgap;
 	var html = "";
 	html += "<div id='" + idea.id + "' class='group draggable' behavior='selectable' style='position:absolute; left:" + idea.x + "px; top:" + idea.y + "px;'>";
 	html += "<img src='" + rectImageName + "' style='position:absolute' width=200px height=" + height + "px></img>";
 	html += "<span class='groupLabel editable' style='position:absolute; left:50px; top:-10px; white-space:nowrap;'>" + idea.idea + "</span>";
 
 	// Then add children
-	var children = idea.children
-	for (var i=0; i<children.length; i++) {
+	for (var i=0; i<numChildren; i++) {
 		var child = children[i];
-		var x = 30 + Math.floor(Math.random() * 20);
-		var y = 20 + i * 28;
+		if (i == 0) {
+			var x = groupHMargin + groupHorVar;		// Always put first item all the way to the right (to avoid looking hierarchical)
+		} else {
+			var x = groupHMargin + Math.floor(Math.random() * groupHorVar);
+		}
+		var y = groupVMargin + i * itemHeight + vgaps[i];
 		html += genIdeaHTML(child.idea, child.id, x, y);
 	}
 	
 	html += "</div>";
-	
+
 	return html;
 }
 
@@ -69,7 +96,9 @@ function genIdeaHTML(text, id, x, y) {
 	html += "<span id='" + id + "' class='item draggable editable' behavior='selectable' style='position:absolute; left:" + x + "px; top:" + y + "px; white-space:nowrap;'>";
 	html += text;
 	html += "</span>";
-	
+
+//	$("#ideas").append(html);
+
 	return html;
 }
 
@@ -170,6 +199,180 @@ function deleteIdea(node) {
 	}
 }
 
+/////////////////////
+// GROUP MANAGEMENT
+/////////////////////
+
+// Move the specified node in to the specified group
+function moveInToGroup(node, group) {
+	// Insure that specified node is a regular item
+	if (!node.hasClass("item")) {
+		return;
+	}
+	// Insure that specified group is a valid group
+	if (!group.hasClass("group")) {
+		return;
+	}
+	
+	node.appendTo(group);		// Update data structure to move node in to group
+	
+	// Keep node in same position on screen
+	var groupPos = group.position();
+	var groupx = groupPos.left;
+	var groupy = groupPos.top;
+	var nodePos = node.position();
+	var x = parseInt(node.attr("nodedownx"));
+	var y = parseInt(node.attr("nodedowny"));
+	x -= groupx;
+	y -= groupy;
+	node.attr("nodedownx", x);
+	node.attr("nodedowny", y);
+
+	updateGroupBounds(group);
+	group.addClass("groupUpdated");
+}
+
+// Move the specified node out of its group
+function moveOutOfGroup(node) {
+	// Insure that node is a regular item
+	if (!node.hasClass("item")) {
+		return;
+	}
+	var group = node.parent();
+	// Insure that item is in a group
+	if (!group.hasClass("group")) {
+		return;
+	}
+	
+	node.appendTo(group.parent());		// Update data structure to move node out of group
+	
+	// Keep node in same position on screen
+	var groupPos = group.position();
+	var groupx = groupPos.left;
+	var groupy = groupPos.top;
+	var nodePos = node.position();
+	var x = parseInt(node.attr("nodedownx"));
+	var y = parseInt(node.attr("nodedowny"));
+	x += groupx;
+	y += groupy;
+	node.attr("nodedownx", x);
+	node.attr("nodedowny", y);
+
+	updateGroupBounds(group);
+	layoutGroupChildren(group);
+}
+
+// Relayout position of children with a group
+function layoutGroupChildren(group) {
+	// Insure valid group
+	if (!group.hasClass("group")) {
+		return;
+	}
+	
+	var children = group.children();
+	var i = 0;
+	children.each(function() {
+		var child = $(this);
+		if (child.hasClass("item")) {
+			gap = Math.ceil(Math.random() * groupVerVar);
+			if (i == 0) {
+				var x = groupHMargin + groupHorVar;		// Always put first item all the way to the right (to avoid looking hierarchical)
+			} else {
+				var x = groupHMargin + Math.floor(Math.random() * groupHorVar);
+			}
+			var y = groupVMargin + i * itemHeight + gap;
+			child.css("left", x);
+			child.css("top", y);
+			i += 1;
+		}
+	});
+}
+
+// Update group bounds to include all children
+function updateGroupBounds(group) {
+	var children = group.children();
+	var w = 0;
+	var h = 0;
+	children.each(function() {
+		var child = $(this);
+		if (child.hasClass("item")) {
+			var child = $(this);
+			var childRight = child.position().left + child.width();
+			if (childRight > w) w = childRight;
+			var childBottom = child.position().top + child.height();
+			if (childBottom > h) h = childBottom;
+		}
+	});
+	w += groupHMargin + groupHorVar;
+	h += groupVMargin;
+	group.width(w + "px");
+	group.height(h + "px");
+
+	// Update image dimensions
+	var image = group.children("img");
+	image.width(w + "px");
+	image.height(h + "px");
+}
+
+// Node has moved - determine if it should be removed from or added to any groups
+function updateGroups(node) {
+	// Only update groups when dealing with individual items
+	if (!node.hasClass("item")) {
+		return;
+	}
+	
+	var buffer = 5;
+
+	// node bounds
+	var nodex = node.position().left;
+	var nodey = node.position().top;
+	var nodew = node.width();
+	var nodeh = node.height();
+
+	var parent = node.parent();
+	if (parent.hasClass("group")) {
+		// Determine if node should be dragged OUT OF GROUP
+//		console.log("Check if node (" + node.attr("id") + ": '" + node.html() + "') should be dragged OUT OF group");
+		var group = parent;
+		updateGroupBounds(group);
+
+		// Original group bounds (w/ buffer)
+		var groupx = parseInt(group.attr("origx")) - buffer;
+		var groupy = parseInt(group.attr("origy")) - buffer;
+		var groupw = parseInt(group.attr("origw")) + 2*buffer;
+		var grouph = parseInt(group.attr("origh")) + 2*buffer;
+	
+		// Determine if node has been dragged out of group
+		if ((nodex > groupw) || (nodey > grouph)) {
+			console.log("node dragged OUT OF GROUP");
+//			node.addClass("to_degroup");
+			moveOutOfGroup(node);
+		}
+	} else {
+		// Determine if node should be dragged INTO GROUP
+//		console.log("Check if node (" + node.attr("id") + ": '" + node.html() + "') should be dragged IN TO group");
+		var nodex1 = nodex;
+		var nodey1 = nodey;
+		var nodex2 = nodex + nodew;
+		var nodey2 = nodey + nodeh;
+		var groups = $(".group");
+		groups.each(function() {
+			var group = $(this);
+			// Group bounds (w/ buffer)
+			var groupPos = group.position();
+			var groupx1 = groupPos.left + buffer;
+			var groupy1 = groupPos.top + buffer;
+			var groupx2 = groupx1 + group.width() - 2*buffer;
+			var groupy2 = groupy1 + group.height() - 2*buffer;
+			
+			if ((nodex1 < groupx2) && (nodey1 < groupy2) && (nodex2 > groupx1) && (nodey2 > groupy1)) {
+				console.log("node dragged IN TO GROUP");
+				moveInToGroup(node, group);
+			}
+		})
+	}
+}
+
 // EVENT HANDLERS
 function createEventHandlers() {
 	// Single click select (with Drag)
@@ -189,7 +392,18 @@ function createEventHandlers() {
 		$(node).addClass("selected");
 		var itemToHilite = node;
 		if (node.hasClass("group")) {
+			var group = node;
 			itemToHilite = node.find(".groupLabel");
+		}
+		var parent = node.parent();
+		if (parent.hasClass("group")) {
+			// Remember original group bounds
+			var group = parent;
+			var groupPos = group.position();
+			group.attr("origx", groupPos.left);
+			group.attr("origy", groupPos.top);
+			group.attr("origw", group.width());
+			group.attr("origh", group.height());
 		}
 		itemToHilite.addClass("hilited");
 
@@ -218,6 +432,8 @@ function createEventHandlers() {
 			node.css("top", y + "px");
 			node.addClass("moved");
 
+			updateGroups(node);
+
 			return false;
 		});
 
@@ -231,8 +447,26 @@ function createEventHandlers() {
 
 		if (node.hasClass("moved")) {
 			node.removeClass("moved");
-			savePosition(node);
+			layoutGroupChildren(node.parent());
+			savePosition(node);		// Update database
 		}
+		
+		// Clear saved data
+		node.removeAttr("nodedownx");
+		node.removeAttr("nodedowny");
+		node.removeAttr("mousedownx");
+		node.removeAttr("mousedowny");
+		node.removeAttr("origx");
+		node.removeAttr("origy");
+		node.removeAttr("origw");
+		node.removeAttr("origh");
+
+		$(".groupUpdated").each(function() {
+			var group = $(this);
+			layoutGroupChildren(group);
+			updateGroupBounds(group);
+			group.removeClass("groupUpdated");
+		})
 
 		return false;
 	});

@@ -1,0 +1,16 @@
+#ideas {
+	line-height: 1.6em;
+}
+
+#ideaBox {
+	width: 60%;
+	height: 25px;
+}
+
+.author {
+	color: #888;
+}
+
+.editActive {
+	background-color: #e8f9b6;
+}

@@ -7,6 +7,8 @@ Priorities
   5. Channel push
 
 Specifics
+  * Make editing style match non-editing style
+  * Clean up tags ("selected" vs. "hilited")
   * Remember last view by user
   * Variable space between ideas
   * First idea should be to the right of other ideas
