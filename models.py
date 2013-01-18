@@ -127,6 +127,21 @@ class Idea(db.Model):
 		self.y = y
 		self.put()
 
+	def reparent(self, newParentObj):
+		# TODO: be sure to handle likes
+		fatherObj = self.father
+		key = self.key();
+		if fatherObj != newParentObj:
+			# Remove self pointer from father
+			fatherObj.children.remove(key)
+			fatherObj.put()
+			# Change father pointer from self
+			self.father = newParentObj
+			self.put()
+			# Change children list in new parent
+			newParentObj.children.append(key)
+			newParentObj.put()
+
 	def deletePromote(self):
 		"""Remove self from database, promoting children"""
 		self.doUnlike()
@@ -134,21 +149,18 @@ class Idea(db.Model):
 		y = self.y
 		fatherObj = self.father
 		key = self.key()
+		# Remove self pointer from father
 		if fatherObj:
-			# Remove self pointer from father
 			fatherObj.children.remove(key)
 			fatherObj.put()
 			# Add children to father
 			for child in self.children:
 				fatherObj.children.append(child)
 				fatherObj.put()
-		# Change father pointer from children, and update children's position
+		# Change father pointer from children
 		for child in self.children:
 			childObj = db.get(child)
 			childObj.father = fatherObj
-			childObj.x = x
-			childObj.y = y
-			y += 25
 			childObj.put()
 		# Delete self from DB
 		db.delete(key)

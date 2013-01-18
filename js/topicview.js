@@ -62,3 +62,10 @@ function displayTopicsImpl(result) {
 
 	enableIdeaTools();
 }
+
+function deleteIdea() {
+	var id = $(".editActive").attr("id");
+	$.post("/delete", {"id" : id}, function() {
+		window.location.reload();
+	});
+}

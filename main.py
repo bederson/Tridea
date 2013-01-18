@@ -93,10 +93,12 @@ class DeleteHandler(webapp2.RequestHandler):
 			ideaObj.deleteRecurse()
 
 class NewHandler(webapp2.RequestHandler):
+	"""Creates a new idea. Either returns JSON with the new id, or redirects to the specified page"""
 	# Inserts an idea into hierarchy)
 	def post(self):
 		idea = self.request.get('idea')
 		fatherId = self.request.get('father')
+		action = self.request.get('action')		# Can be 'id' for JSON, or URL of target page
 		ideaObj = createIdea(idea=idea, fatherId=fatherId)
 
 		if ideaObj:
@@ -106,8 +108,21 @@ class NewHandler(webapp2.RequestHandler):
 		result = {
 			'id' : idStr
 		}
-		self.response.headers['Content-Type'] = 'application/json'
-		self.response.out.write(json.dumps(result))
+		if action == 'id':
+			self.response.headers['Content-Type'] = 'application/json'
+			self.response.out.write(json.dumps(result))
+		else:
+			self.redirect("/")
+
+class ReparentHandler(webapp2.RequestHandler):
+	# Moves item to new parent
+	def post(self):
+		idStr = self.request.get('id')
+		newFatherId = self.request.get('newFather')
+		ideaObj = Idea.get_by_id(int(idStr))
+		newFatherObj = Idea.get_by_id(int(newFatherId))
+		if ideaObj and newFatherObj:
+			ideaObj.reparent(newFatherObj)
 
 class EditHandler(webapp2.RequestHandler):
 	# Edits an existing idea
@@ -224,6 +239,7 @@ app = webapp2.WSGIApplication([
 	('/ideagraph', IdeaGraphHandler),
 	('/delete', DeleteHandler),
 	('/new', NewHandler),
+	('/reparent', ReparentHandler),
 	('/edit', EditHandler),
 	('/move', MoveHandler),
 	('/qtopics', QueryTopicsHandler),

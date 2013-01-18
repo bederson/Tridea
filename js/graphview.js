@@ -37,7 +37,7 @@ function displayIdeasGrouped(ideas) {
 			html += genIdeaHTML(idea.idea, idea.id, idea.x, idea.y);
 		} else {
 			// Group
-			html += genGroupHTML(idea, idea.children.length);
+			html += genGroupHTML(idea);
 		}
 	}
 
@@ -51,7 +51,7 @@ function displayIdeasGrouped(ideas) {
 	});
 }
 
-function genGroupHTML(idea, numChildren) {
+function genGroupHTML(idea) {
 	var children = idea.children;
 	var numChildren = children.length;
 
@@ -112,7 +112,7 @@ function savePosition(idea) {
 	$.post("/move", queryStr);
 }
 
-function addIdeaVis(fatherId) {
+function addIdeaVis(fatherid) {
 	// Save any open idea boxes
 	if ($("#ideaBoxVis").size() > 0) {
 		saveAndCloseIdeaVis();
@@ -124,8 +124,8 @@ function addIdeaVis(fatherId) {
 	ideas.append(html);
 	editIdeaVis($("#newIdea"));
 
-	var queryStr = {"idea" : text, "father" : fatherId};
-	$.post("/new", queryStr, function(result) {
+	var data = {"action": "id", "idea" : text, "father" : fatherid};
+	$.post("/new", data, function(result) {
 		if (result.id == "") {
 			// Failed to create object
 			$("#newIdea").remove();
@@ -193,15 +193,66 @@ function deleteIdea(node) {
 		}
 		var id = node.attr("id");
 		node.remove();
-		$.post("/delete", {"id" : id}, function() {
-			window.location.reload();   // Necessary to show promoted notes
-		});
+		$.post("/delete", {"id" : id});
 	}
 }
 
 /////////////////////
 // GROUP MANAGEMENT
 /////////////////////
+
+// Create a new group out of the specified items
+function combineItemsInToGroup(item1, item2) {
+	// Position group correctly
+	var item1Pos = item1.position();
+	var item1x = item1Pos.left;
+	var item1y = item1Pos.top;
+	var item2Pos = item2.position();
+	var item2x = item2Pos.left;
+	var item2y = item2Pos.top;
+	var x = Math.min(item1x, item2x);
+	var y = Math.min(item1y, item2y);
+
+	var id = "none";
+	var idea = {
+		id: id,
+		idea: "GROUP",
+		children: [],
+		x: x,
+		y: y
+	}
+	var html = genGroupHTML(idea);
+	var ideas = $("#ideas");
+	ideas.append(html);
+	var group = $("#none");
+	
+	moveInToGroup(item1, group);
+	moveInToGroup(item2, group);
+
+	var topicid = getURLParameter("topicid");
+	var data = {"action": "id", "idea" : idea.idea, "father" : topicid};
+	$.post("/new", data, function(result) {
+		if (result.id == "") {
+			// Failed to create object
+//			$("#newIdea").remove();
+			console.log("FAILED TO CREATE NEW GROUP");
+		} else {
+			$("#" + id).attr("id", result.id);
+
+			// Update group position in DB
+			data = {"id": result.id, "x": x, "y": y};
+			$.post("/move", data);
+
+			// Reparent items in DB
+			data = {"id": item1.attr("id"), "newFather": result.id};
+			$.post("/reparent", data);
+			data = {"id": item2.attr("id"), "newFather": result.id};
+			$.post("/reparent", data);
+			
+			createEventHandlers();
+		}
+	});
+}
 
 // Move the specified node in to the specified group
 function moveInToGroup(node, group) {
@@ -221,13 +272,28 @@ function moveInToGroup(node, group) {
 	var groupx = groupPos.left;
 	var groupy = groupPos.top;
 	var nodePos = node.position();
-	var x = parseInt(node.attr("nodedownx"));
-	var y = parseInt(node.attr("nodedowny"));
+	if (node.hasClass("selected")) {
+		var x = parseInt(node.attr("nodedownx"));
+		var y = parseInt(node.attr("nodedowny"));
+	} else {
+		var nodePos = node.position();
+		var x = nodePos.left;
+		var y = nodePos.top;
+	}
 	x -= groupx;
 	y -= groupy;
+	node.css("left", x);
+	node.css("top", y);
 	node.attr("nodedownx", x);
 	node.attr("nodedowny", y);
 
+	// Update database - only if group has already been put in DB
+	var groupID = group.attr("id");
+	if (groupID != "none") {
+		data = {"id": node.attr("id"), "newFather": group.attr("id")};
+		$.post("/reparent", data);
+	}
+	
 	updateGroupBounds(group);
 	group.addClass("groupUpdated");
 }
@@ -255,8 +321,20 @@ function moveOutOfGroup(node) {
 	var y = parseInt(node.attr("nodedowny"));
 	x += groupx;
 	y += groupy;
+	node.css("left", x);
+	node.css("top", y);
 	node.attr("nodedownx", x);
 	node.attr("nodedowny", y);
+	
+	// Update database
+	var topicid = getURLParameter("topicid");
+	data = {"id": node.attr("id"), "newFather": topicid};
+	$.post("/reparent", data);
+	
+	// Delete group if it is now empty
+	if (group.children(".item").length == 0) {
+		deleteIdea(group);
+	}
 
 	updateGroupBounds(group);
 	layoutGroupChildren(group);
@@ -324,8 +402,9 @@ function updateGroups(node) {
 	var buffer = 5;
 
 	// node bounds
-	var nodex = node.position().left;
-	var nodey = node.position().top;
+	var nodePos = node.position();
+	var nodex = nodePos.left;
+	var nodey = nodePos.top;
 	var nodew = node.width();
 	var nodeh = node.height();
 
@@ -343,9 +422,8 @@ function updateGroups(node) {
 		var grouph = parseInt(group.attr("origh")) + 2*buffer;
 	
 		// Determine if node has been dragged out of group
-		if ((nodex > groupw) || (nodey > grouph)) {
-			console.log("node dragged OUT OF GROUP");
-//			node.addClass("to_degroup");
+		if ((nodex > groupw) || (nodey > grouph) || ((nodex + nodew) < 0) || ((nodey + nodeh) < 0)) {
+//			console.log("node dragged OUT OF GROUP");
 			moveOutOfGroup(node);
 		}
 	} else {
@@ -355,6 +433,8 @@ function updateGroups(node) {
 		var nodey1 = nodey;
 		var nodex2 = nodex + nodew;
 		var nodey2 = nodey + nodeh;
+		
+		// First look at groups to see if we are dragging into a group
 		var groups = $(".group");
 		groups.each(function() {
 			var group = $(this);
@@ -366,10 +446,28 @@ function updateGroups(node) {
 			var groupy2 = groupy1 + group.height() - 2*buffer;
 			
 			if ((nodex1 < groupx2) && (nodey1 < groupy2) && (nodex2 > groupx1) && (nodey2 > groupy1)) {
-				console.log("node dragged IN TO GROUP");
+				// console.log("node dragged IN TO GROUP");
 				moveInToGroup(node, group);
 			}
-		})
+		});
+		
+		// Then look at items to see if we are dragging onto another item
+		var items = $("#ideas").children(".item");
+		items.each(function() {
+			var item = $(this);
+			if (item.attr("id") != node.attr("id")) {
+				// Item bounds (w/ buffer)
+				var itemPos = item.position();
+				var itemx1 = itemPos.left + buffer;
+				var itemy1 = itemPos.top + buffer;
+				var itemx2 = itemx1 + item.width() - 2*buffer;
+				var itemy2 = itemy1 + item.height() - 2*buffer;
+				if ((nodex1 < itemx2) && (nodey1 < itemy2) && (nodex2 > itemx1) && (nodey2 > itemy1)) {
+					// console.log("node dragged ON TO ITEM: " + item.html());
+					combineItemsInToGroup(node, item);
+				}
+			}
+		});
 	}
 }
 
@@ -427,7 +525,6 @@ function createEventHandlers() {
 			var dy = evt.pageY - node.attr("mousedowny");
 			var x = parseInt(node.attr("nodedownx")) + dx;
 			var y = parseInt(node.attr("nodedowny")) + dy;
-			if (y < 0) y = 0;
 			node.css("left", x + "px");
 			node.css("top", y + "px");
 			node.addClass("moved");
