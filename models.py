@@ -177,27 +177,19 @@ class Idea(db.Model):
 	@db.transactional(xg=True)
 	def deleteRecurse(self):
 		"""Remove self from database, recursively deleteing all descendants as well"""
-		logging.info("del: %s", self.key().id())
+		key = self.key()
+		fatherObj = self.father
 		# First recursively delete descendants
 		for child in self.children:
 			childObj = db.get(child)
 			childObj.deleteRecurse()
 		# Then delete self
-		key = self.key()
-		me = db.get(key)	# Necessary to refetch self since previous recursive delete modifies self
-		me.doUnlikeAll()
-		fatherObj = me.father
+		self.doUnlikeAll()
 		if fatherObj:
 			# Remove self pointer from father
 			fatherObj.children.remove(key)
 			fatherObj.put()
-		# Remove father pointer from children
-		for child in me.children:
-			childObj = db.get(child)
-			childObj.father = None
-			childObj.put()
 		# Delete self from DB
-		logging.info("key: %s", self.key().id())
 		db.delete(key)
 
 class LikedIdea(db.Model):
