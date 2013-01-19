@@ -21,6 +21,7 @@ var groupVMargin = 20;
 var groupHMargin = 15;
 var groupHorVar = 20;
 var groupVerVar = 3;
+var noIdYet = "NO_ID";
 
 function displayIdeasByGraph() {
 	display = "graph";	
@@ -28,6 +29,10 @@ function displayIdeasByGraph() {
 }
 
 function displayIdeasGrouped(ideas) {
+	if (ideas.length == 0) {
+		$("#resultsNote").append("- Double-click anywhere to add one");
+	}
+
 	var html = "";
 	for (var i=0; i<ideas.length; i++) {
 		var idea = ideas[i];
@@ -97,22 +102,20 @@ function genIdeaHTML(text, id, x, y) {
 	html += text;
 	html += "</span>";
 
-//	$("#ideas").append(html);
-
 	return html;
 }
 
 function savePosition(idea) {
 	var pos = idea.position();
-	var queryStr = {
+	var data = {
 		"id" : idea[0].id,
 		"x" : pos.left,
 		"y" : pos.top
 	};
-	$.post("/move", queryStr);
+	$.post("/move", data);
 }
 
-function addIdeaVis(fatherid) {
+function addIdeaVis(fatherid, x, y) {
 	// Save any open idea boxes
 	if ($("#ideaBoxVis").size() > 0) {
 		saveAndCloseIdeaVis();
@@ -120,19 +123,23 @@ function addIdeaVis(fatherid) {
 	
 	var ideas = $("#ideas");
 	var text = "New idea";
-	var html = genIdeaHTML(text, "newIdea", 50, 50);
+	var html = genIdeaHTML(text, noIdYet, x, y);
 	ideas.append(html);
-	editIdeaVis($("#newIdea"));
+	editIdeaVis($("#" + noIdYet));
 
-	var data = {"action": "id", "idea" : text, "father" : fatherid};
+	var data = {
+		"action":"id", 
+		"idea": text, 
+		"x": x,
+		"y": y,
+		"father": fatherid
+	};
 	$.post("/new", data, function(result) {
 		if (result.id == "") {
 			// Failed to create object
-			$("#newIdea").remove();
+			$("#" + noIdYet).remove();
 		} else {
-			$("#newIdea").attr("id", result.id);
-			createEventHandlers();
-			$("#ideaBoxVis").select();
+			$("#" + noIdYet).attr("id", result.id);
 		}
 	});
 }
@@ -156,7 +163,10 @@ function editIdeaVis(node) {
 	ideaBox.css("top", 0);
 	ideaBox.width(node.width());
 	ideaBox.val(origText);
+	ideaBox.select();
 	ideaBox.focus();
+
+	createEventHandlers();
 	ideaBox.on("keypress", function(evt) {
 		if (evt.keyCode == 13) {
 			// Return key
@@ -178,11 +188,17 @@ function saveAndCloseIdeaVis() {
 		node.html(text);
 		node.removeClass("editing");
 
-		var queryStr = {"idea" : text, "id" : id};
-		$.post("/edit", queryStr);
+		// Safety - shouldn't happen, but be careful
+		if (id != noIdYet) {
+			var data = {
+				"idea": text,
+				"id": id
+			};
+			$.post("/edit", data);
 
-		$("*").removeClass("selected");		// First remove any existing selection
-		$("*").removeClass("hilited");		// Remove any hiliting
+			$("*").removeClass("selected");		// First remove any existing selection
+			$("*").removeClass("hilited");		// Remove any hiliting
+		}
 	}
 }
 
@@ -230,23 +246,31 @@ function combineItemsInToGroup(item1, item2) {
 	moveInToGroup(item2, group);
 
 	var topicid = getURLParameter("topicid");
-	var data = {"action": "id", "idea" : idea.idea, "father" : topicid};
+	var data = {
+		"action": "id",
+		"idea": idea.idea,
+		"x": x,
+		"y": y,
+		"father" : topicid
+	};
 	$.post("/new", data, function(result) {
 		if (result.id == "") {
 			// Failed to create object
-//			$("#newIdea").remove();
+//			$("#" + noIdYet).remove();
 			console.log("FAILED TO CREATE NEW GROUP");
 		} else {
 			$("#" + id).attr("id", result.id);
 
-			// Update group position in DB
-			data = {"id": result.id, "x": x, "y": y};
-			$.post("/move", data);
-
 			// Reparent items in DB
-			data = {"id": item1.attr("id"), "newFather": result.id};
+			data = {
+				"id": item1.attr("id"),
+				"newFather": result.id
+			};
 			$.post("/reparent", data);
-			data = {"id": item2.attr("id"), "newFather": result.id};
+			data = {
+				"id": item2.attr("id"),
+				"newFather": result.id
+			};
 			$.post("/reparent", data);
 			
 			createEventHandlers();
@@ -290,7 +314,10 @@ function moveInToGroup(node, group) {
 	// Update database - only if group has already been put in DB
 	var groupID = group.attr("id");
 	if (groupID != "none") {
-		data = {"id": node.attr("id"), "newFather": group.attr("id")};
+		data = {
+			"id": node.attr("id"),
+			"newFather": group.attr("id")
+		};
 		$.post("/reparent", data);
 	}
 	
@@ -328,13 +355,16 @@ function moveOutOfGroup(node) {
 	
 	// Update database
 	var topicid = getURLParameter("topicid");
-	data = {"id": node.attr("id"), "newFather": topicid};
-	$.post("/reparent", data);
-	
-	// Delete group if it is now empty
-	if (group.children(".item").length == 0) {
-		deleteIdea(group);
-	}
+	data = {
+		"id": node.attr("id"),
+		"newFather": topicid
+	};
+	$.post("/reparent", data, function() {
+		// Delete group if it is now empty
+		if (group.children(".item").length == 0) {
+			deleteIdea(group);
+		}
+	});
 
 	updateGroupBounds(group);
 	layoutGroupChildren(group);
@@ -473,6 +503,14 @@ function updateGroups(node) {
 
 // EVENT HANDLERS
 function createEventHandlers() {
+	// First remove all old event handlers
+	$("*").off("mousedown");
+	$("*").off("mousemove");
+	$("*").off("mouseup");
+	$("*").off("keydown");
+	$("*").off("keypress");
+	$("*").off("dblclick");
+	
 	// Single click select (with Drag)
 	$("*").on("mousedown", function(evt) {
 		saveAndCloseIdeaVis();
@@ -568,8 +606,22 @@ function createEventHandlers() {
 		return false;
 	});
 
-	// Double click to edit
-	$(".editable").on("dblclick", function(evt) {
+	// Double click to edit existing item
+	$(".item").on("dblclick", function(evt) {
 		editIdeaVis($(this));
+		evt.stopPropagation();
+	});
+	$(".groupLabel").on("dblclick", function(evt) {
+		editIdeaVis($(this));
+		evt.stopPropagation();
+	});
+
+	// Double click on background to create new item
+	$("#ideas").on("dblclick", function(evt) {
+		var topicid = getURLParameter("topicid");
+		var ideasPos = $("#ideas").position();
+		var x = evt.pageX - ideasPos.left;
+		var y = evt.pageY - ideasPos.top;
+		addIdeaVis(topicid, x, y);
 	});
 }

@@ -91,12 +91,18 @@ function addIdea(fatherId) {
 	var origLeft = $(".editActive").find(".ideaText").position().left;
 	$("#ideaAdd").css("margin-left", origLeft);
 	$("#ideaBox").val(origText);
+	$("#ideaBox").select();
 	$("#ideaBox").focus();
 
 	$("#ideaSave").click(function() {
-		var idea = $("#ideaBox").val();
-		var queryStr = {"idea" : idea, "father" : fatherId};
-		$.post("/new", queryStr, function() {
+		var text = $("#ideaBox").val();
+		var data = {
+			"idea": text, 
+			"x": 50,
+			"y": 50,
+			"father": fatherId
+		};
+		$.post("/new", data, function() {
 			window.location.reload();
 		});
 	});
@@ -137,8 +143,8 @@ function editIdea() {
 
 	$("#ideaSave").click(function() {
 		var idea = $("#ideaBox").val();
-		var queryStr = {"idea" : idea, "id" : id};
-		$.post("/edit", queryStr, function() {
+		var data = {"idea" : idea, "id" : id};
+		$.post("/edit", data, function() {
 			window.location.reload();
 		});
 	});

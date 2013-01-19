@@ -7,7 +7,7 @@
 # you may not use this file except in compliance with the License.
 # You may obtain a copy of the License at
 #
-#     http://www.apache.org/licenses/LICENSE-2.0
+#	  http://www.apache.org/licenses/LICENSE-2.0
 #
 # Unless required by applicable law or agreed to in writing, software
 # distributed under the License is distributed on an "AS IS" BASIS,
@@ -87,10 +87,7 @@ class DeleteHandler(webapp2.RequestHandler):
 	def post(self):
 		idStr = self.request.get('id')
 		ideaObj = Idea.get_by_id(int(idStr))
-		if ideaObj.father:
-			ideaObj.deletePromote()
-		else:
-			ideaObj.deleteRecurse()
+		ideaObj.deleteRecurse()
 
 class NewHandler(webapp2.RequestHandler):
 	"""Creates a new idea. Either returns JSON with the new id, or redirects to the specified page"""
@@ -98,8 +95,10 @@ class NewHandler(webapp2.RequestHandler):
 	def post(self):
 		idea = self.request.get('idea')
 		fatherId = self.request.get('father')
+		x = int(self.request.get('x', default_value='0'))
+		y = int(self.request.get('y', default_value='0'))
 		action = self.request.get('action')		# Can be 'id' for JSON, or URL of target page
-		ideaObj = createIdea(idea=idea, fatherId=fatherId)
+		ideaObj = createIdea(idea=idea, fatherId=fatherId, x=x, y=y)
 
 		if ideaObj:
 			idStr = ideaObj.key().id()
@@ -185,6 +184,7 @@ class QueryIdeasHandler(webapp2.RequestHandler):
 			ideaDict = {}
 
 			# Pass 1: Load all idea objects into dictionary, indexed by Key
+			# TODO: Not scalable - need to filter by only descendants
 			for ideaObj in ideas:
 				ideaKey = ideaObj.key()
 				ideaDict[ideaKey] = ideaObj
@@ -205,16 +205,21 @@ class QueryIdeasHandler(webapp2.RequestHandler):
 		count = 0
 		ideaJSON = []
 		for ideaObjKey in ideaObjKeys:
-			ideaObj = ideaDict[ideaObjKey]
-			ideaObj.depth = 0
-			json = self.createIdeaJSON(ideaObj)
-			ideaJSON.append(json)
-			if len(ideaObj.children) > 0:
-				descendants, numd = self.depthFirstSearch(ideaObj.children, ideaDict)
-				json['children'] = descendants
-				count += numd
+			# Sanity check - SHOULD always be there
+			if ideaObjKey in ideaDict:
+				ideaObj = ideaDict[ideaObjKey]
+				ideaObj.depth = 0
+				json = self.createIdeaJSON(ideaObj)
+				ideaJSON.append(json)
+				if len(ideaObj.children) > 0:
+					descendants, numd = self.depthFirstSearch(ideaObj.children, ideaDict)
+					json['children'] = descendants
+					count += numd
+				else:
+					count += 1
 			else:
-				count += 1
+				# Don't know why children has a key that isn't in DB - log error
+				logging.info("DB corruption warning: children contains key that isn't in DB: %s", ideaObjKey)
 		return ideaJSON, count
 
 	def createIdeaJSON(self, ideaObj):

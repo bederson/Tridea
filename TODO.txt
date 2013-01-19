@@ -1,12 +1,16 @@
 
 POST-ITS
 Priorities
-  2. Group interaction
   3. Feature cleanup
   4. Consistent incremental update (no global refresh)
   5. Channel push
 
 Specifics
+  * In list view, don't allow grand children
+  * Pause incremental updates while editing (any recent interaction or open textbox)
+  * Auto-resize the textbox while editing
+  * Make sure you can ungroup on the same interaction that you initially grouped with 
+    (to address problem when you start with two boxes on top of each other)
   * Make editing style match non-editing style
   * Clean up tags ("selected" vs. "hilited")
   * Remember last view by user

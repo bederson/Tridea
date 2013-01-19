@@ -20,11 +20,14 @@ import logging
 from google.appengine.ext import db
 from google.appengine.api import users
 
-def createIdea(idea, fatherId):
+@db.transactional(xg=True)
+def createIdea(idea, fatherId, x, y):
 	if not users.get_current_user():
 		return None
 
 	ideaObj = Idea(idea=idea)
+	ideaObj.x = x
+	ideaObj.y = y
 	ideaObj.put()
 	if fatherId:
 		fatherObj = Idea.get_by_id(int(fatherId))
@@ -48,7 +51,6 @@ class Idea(db.Model):
 	date = db.DateProperty(auto_now=True)
 	idea = db.StringProperty(required=True)
 	likes = db.IntegerProperty(default=0)
-	descLikes = db.IntegerProperty(default=0)
 	x = db.IntegerProperty(default=0)
 	y = db.IntegerProperty(default=0)
 
@@ -66,50 +68,55 @@ class Idea(db.Model):
 		else:
 			return self.author.email()
 
+	@db.transactional(xg=True)
 	def doLike(self):
 		"""If idea not liked by current user, then like it"""
 		if not self.doesLike():
-			like = LikedIdea()
+			like = LikedIdea(parent=self)
 			like.idea = self
 			like.put()
 			self.likes += 1
 			self.put()
-			self.updateAncestorLikes(1)
 
 	def doesLike(self):
 		like = LikedIdea.all()
 		like = like.filter('author =', users.get_current_user())
 		like = like.filter('idea =', self)
+		like.ancestor(self.key())
 		if like.count() > 0:
 			return True
 		else:
 			return False
 
+	@db.transactional(xg=True)
 	def doUnlike(self):
 		"""If idea liked by current user, then unlike it"""
 		like = LikedIdea.all()
 		like = like.filter('author =', users.get_current_user())
 		like = like.filter('idea =', self)
+		like.ancestor(self.key())
 		if like.count() > 0:
 			db.delete(like.get().key())
 			self.likes -= 1
 			self.put()
-			self.updateAncestorLikes(-1)
 
-	def updateAncestorLikes(self, delta):
-		self.descLikes += delta
-		self.put()
-		father = self.father
-		if father:
-			father.sortChildren()		# Maintain sort order of father's children (if there is a father)
-			father.updateAncestorLikes(delta)
+	@db.transactional(xg=True)
+	def doUnlikeAll(self):
+		"""Remove all likes of this idea"""
+		like = LikedIdea.all()
+		like = like.filter('idea =', self)
+		like.ancestor(self.key())
+		if like.count() > 0:
+			db.delete(like.get().key())
+			self.likes -= 1
+			self.put()
 
 	def sortChildren(self):
 		"""Sorts children by number of likes"""
 		def ideaCompareByLikes(key1, key2):
 			i1 = db.get(key1)
 			i2 = db.get(key2)
-			return int(i2.descLikes - i1.descLikes)
+			return int(i2.likes - i1.likes)
 
 		if self:
 			self.children.sort(cmp=ideaCompareByLikes)
@@ -121,30 +128,32 @@ class Idea(db.Model):
 		else:
 			self.idea=idea
 			self.put()
-		
+
 	def moveIdea(self, x, y):
 		self.x = x
 		self.y = y
 		self.put()
 
+	@db.transactional(xg=True)
 	def reparent(self, newParentObj):
 		# TODO: be sure to handle likes
 		fatherObj = self.father
-		key = self.key();
 		if fatherObj != newParentObj:
-			# Remove self pointer from father
+			key = self.key();
+			# Remove self from existing father's children
 			fatherObj.children.remove(key)
 			fatherObj.put()
-			# Change father pointer from self
+			# Change self to point to new father
 			self.father = newParentObj
 			self.put()
-			# Change children list in new parent
+			# Add self to new parent's children list
 			newParentObj.children.append(key)
 			newParentObj.put()
 
+	@db.transactional(xg=True)
 	def deletePromote(self):
 		"""Remove self from database, promoting children"""
-		self.doUnlike()
+		self.doUnlikeAll()
 		x = self.x
 		y = self.y
 		fatherObj = self.father
@@ -165,17 +174,19 @@ class Idea(db.Model):
 		# Delete self from DB
 		db.delete(key)
 
+	@db.transactional(xg=True)
 	def deleteRecurse(self):
 		"""Remove self from database, recursively deleteing all descendants as well"""
+		logging.info("del: %s", self.key().id())
 		# First recursively delete descendants
 		for child in self.children:
 			childObj = db.get(child)
 			childObj.deleteRecurse()
 		# Then delete self
-		me = db.get(self.key())  # Necessary to refetch self since previous recursive delete modifies self
-		me.doUnlike()
+		key = self.key()
+		me = db.get(key)	# Necessary to refetch self since previous recursive delete modifies self
+		me.doUnlikeAll()
 		fatherObj = me.father
-		key = me.key()
 		if fatherObj:
 			# Remove self pointer from father
 			fatherObj.children.remove(key)
@@ -186,6 +197,7 @@ class Idea(db.Model):
 			childObj.father = None
 			childObj.put()
 		# Delete self from DB
+		logging.info("key: %s", self.key().id())
 		db.delete(key)
 
 class LikedIdea(db.Model):

@@ -32,21 +32,28 @@ function showView(display) {
 }
 
 function displayIdeas() {
+	positionFooter();
+	resizeIdeasContainer();
+
+	$(window).resize(function() {
+		positionFooter();
+		resizeIdeasContainer();
+	});
+
 	$("#loading").css("display", "block");
 	var topicid = getURLParameter("topicid");
 	var queryStr = {"topicid" : topicid};
-
-	positionFooter();
-	$(window).resize(function() {
-		positionFooter();
-	});
-
 	$.getJSON("/qideas", queryStr, displayIdeasImpl)
 }
 
 function displayIdeasImpl(result) {
+	// Make sure this topic is defined
+	if (!('ideas' in result)) {
+		var url = window.location.protocol + "//" + window.location.host + "/";
+		window.location.replace(url);
+	}
+	
 	$("#loading").css("display", "none");
-
 	var numIdeas = result['count'];
 	var ideas = result['ideas'];
 	if (numIdeas == 0) {
@@ -58,7 +65,7 @@ function displayIdeasImpl(result) {
 		var numIdeasStr = numIdeas + ' Ideas';
 	}
 	$("#resultsOverview").html(numIdeasStr);
-	$("#topic").html("Topic: " + result['topic']);
+	$("#topic").html("<span style='color:gray'>Topic:</span> " + result['topic']);
 
 	if (display == "list") {
 		displayIdeasList(ideas);
@@ -73,6 +80,15 @@ function displayIdeasImpl(result) {
 function positionFooter() {
 	var bottom = $(window).height() - 30 + "px";
 	$("#footer").css("top", bottom);
+}
+
+function resizeIdeasContainer() {
+	var ideas = $("#ideas");
+	var ideasPos = ideas.position();
+	var width = $(window).width() - ideasPos.left;
+	var height = $(window).height() - ideasPos.top;
+	ideas.width(width);
+	ideas.height(height);
 }
 
 function enableIdeaTools() {
