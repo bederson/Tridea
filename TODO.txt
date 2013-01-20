@@ -1,28 +1,20 @@
+=> Channel push
 
-POST-ITS
-Priorities
-  3. Feature cleanup
-  4. Consistent incremental update (no global refresh)
-  5. Channel push
+BUGS
+  * Deal with multi-line items in groups
+  * Can't delete group with 5 children (transaction error)
+  * On appspot, I occasionally get "Transaction collision. Retrying...", and it appears that the transaction never completed
 
-Specifics
-  * In list view, don't allow grand children
+SPECIFICS
+* Auto-resize the textbox while editing
   * Pause incremental updates while editing (any recent interaction or open textbox)
-  * Auto-resize the textbox while editing
   * Make sure you can ungroup on the same interaction that you initially grouped with 
     (to address problem when you start with two boxes on top of each other)
-  * Make editing style match non-editing style
   * Clean up tags ("selected" vs. "hilited")
   * Remember last view by user
-  * Variable space between ideas
-  * First idea should be to the right of other ideas
+
+FEATURES
   * Friends view
-  * Double-click to create or edit item (or group)
-  * Single-click to select and drag item (or group)
-    - Show trashcan if self
-  * Drag item into, within or out of group
-  * Automatically layout items within group (left-flush with horizontal jitter)
-  * Render groups with random selection of hand-drawn images
   * Author on mouseover
   * Like button on mouseover
   * Display of # likes
@@ -53,4 +45,4 @@ OPTIONAL
   * More encouragement for short contributions (meter, red color when getting long)
 
 BUGS
-  * Pressing save multiple times in a row can save the same item multiple times
+  * Anne: Pressing save multiple times in a row can save the same item multiple times

@@ -30,11 +30,13 @@ function displayIdeasListRecurse(ideas, depth) {
 		var idea = ideas[i];
 		// Edit icons at beginning of line
 		var tools = "<span class='editIcons' style='visibility:hidden; float:left; width:75px'>";
-		tools += "<a id='addIdea' href='javascript:addIdea(" + idea.id + ")'>add</a>&nbsp;&nbsp;";
 		if (idea.doesLike) {
-			tools += "<a id='likeIdea' href='javascript:unlikeIdea()'>unlike</a>";
+			tools += "<a id='likeIdea' href='javascript:unlikeIdea()'>unlike</a>&nbsp;&nbsp;";
 		} else {
-			tools += "<a id='likeIdea' href='javascript:likeIdea()'>like</a>";
+			tools += "<a id='likeIdea' href='javascript:likeIdea()'>like</a>&nbsp;&nbsp;";
+		}
+		if (depth == 0) {
+			tools += "<a id='addIdea' href='javascript:addIdea(" + idea.id + ")'>add</a>";
 		}
 		tools += "</span>";
 

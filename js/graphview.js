@@ -15,10 +15,10 @@
 //
 
 // CONSTANTS
-var itemHeight = 28;
-var groupVGap = 23;
+var itemHeight = 26;
+var groupVGap = 15;
 var groupVMargin = 20;
-var groupHMargin = 15;
+var groupHMargin = 10;
 var groupHorVar = 20;
 var groupVerVar = 3;
 var noIdYet = "NO_ID";
@@ -49,9 +49,13 @@ function displayIdeasGrouped(ideas) {
 	$("#ideas").append(html);
 	createEventHandlers();
 	
+	// Update idea bounds
+	$(".item").each(function() {
+		updateItemBounds($(this));
+	});
+	
 	// Update bounds of each group
-	var groups = $(".group");
-	groups.each(function() {
+	$(".group").each(function() {
 		updateGroupBounds($(this));
 	});
 }
@@ -61,7 +65,7 @@ function genGroupHTML(idea) {
 	var numChildren = children.length;
 
 	// Select an image to use for the group
-	var rectNum = 1 + Math.floor(numRects * Math.random());
+	var rectNum = 1 + Math.floor(NUM_RECTS * Math.random());
 	var rectImageName = "images/rect" + rectNum + ".png";
 
 	// First create group
@@ -98,9 +102,9 @@ function genGroupHTML(idea) {
 function genIdeaHTML(text, id, x, y) {
 	var html = "";
 
-	html += "<span id='" + id + "' class='item draggable editable' behavior='selectable' style='position:absolute; left:" + x + "px; top:" + y + "px; white-space:nowrap;'>";
+	html += "<div id='" + id + "' class='item draggable editable' behavior='selectable' style='position:absolute; left:" + x + "px; top:" + y + "px;'>";
 	html += text;
-	html += "</span>";
+	html += "</div>";
 
 	return html;
 }
@@ -156,21 +160,24 @@ function editIdeaVis(node) {
 	var origText = node.text();
 	var origLeft = node.position().left;
 	var origTop = node.position().top;
-	var html = "<input type='text' id='ideaBoxVis' style='position:absolute' type='text'></textarea>";
+	// var html = "<input type='text' id='ideaBoxVis' style='position:absolute'></input>";
+	var html = "<textarea id='ideaBoxVis' style='position:absolute'></textarea>";
 	node.append(html);
 	var ideaBox = $("#ideaBoxVis");
 	ideaBox.css("left", 0);
 	ideaBox.css("top", 0);
-	ideaBox.width(node.width());
 	ideaBox.val(origText);
+	ideaBox.autogrow();
 	ideaBox.select();
 	ideaBox.focus();
 
 	createEventHandlers();
-	ideaBox.on("keypress", function(evt) {
-		if (evt.keyCode == 13) {
-			// Return key
+	ideaBox.on("keydown", function(evt) {
+		// Return or ESC key
+		if ((evt.keyCode == 13) || (evt.keyCode == 27)) {
 			saveAndCloseIdeaVis();
+		} else {
+			// Grow box to accomodate text
 		}
 	});
 }
@@ -187,6 +194,7 @@ function saveAndCloseIdeaVis() {
 		}
 		node.html(text);
 		node.removeClass("editing");
+		updateItemBounds(node);
 
 		// Safety - shouldn't happen, but be careful
 		if (id != noIdYet) {
@@ -199,6 +207,13 @@ function saveAndCloseIdeaVis() {
 			$("*").removeClass("selected");		// First remove any existing selection
 			$("*").removeClass("hilited");		// Remove any hiliting
 		}
+	}
+}
+
+function updateItemBounds(node) {
+	var width = node.width();
+	if (width > TEXT_MAX_WIDTH) {
+		node.width(TEXT_MAX_WIDTH);
 	}
 }
 
@@ -260,20 +275,20 @@ function combineItemsInToGroup(item1, item2) {
 			console.log("FAILED TO CREATE NEW GROUP");
 		} else {
 			$("#" + id).attr("id", result.id);
+			createEventHandlers();
 
 			// Reparent items in DB
 			data = {
 				"id": item1.attr("id"),
 				"newFather": result.id
 			};
-			$.post("/reparent", data);
-			data = {
-				"id": item2.attr("id"),
-				"newFather": result.id
-			};
-			$.post("/reparent", data);
-			
-			createEventHandlers();
+			$.post("/reparent", data, function() {
+				data = {
+					"id": item2.attr("id"),
+					"newFather": result.id
+				};
+				$.post("/reparent", data);
+			});
 		}
 	});
 }
@@ -311,6 +326,9 @@ function moveInToGroup(node, group) {
 	node.attr("nodedownx", x);
 	node.attr("nodedowny", y);
 
+	updateGroupBounds(group);
+	group.addClass("groupUpdated");
+
 	// Update database - only if group has already been put in DB
 	var groupID = group.attr("id");
 	if (groupID != "none") {
@@ -320,9 +338,6 @@ function moveInToGroup(node, group) {
 		};
 		$.post("/reparent", data);
 	}
-	
-	updateGroupBounds(group);
-	group.addClass("groupUpdated");
 }
 
 // Move the specified node out of its group
@@ -352,7 +367,10 @@ function moveOutOfGroup(node) {
 	node.css("top", y);
 	node.attr("nodedownx", x);
 	node.attr("nodedowny", y);
-	
+
+	updateGroupBounds(group);
+	layoutGroupChildren(group);
+
 	// Update database
 	var topicid = getURLParameter("topicid");
 	data = {
@@ -365,9 +383,6 @@ function moveOutOfGroup(node) {
 			deleteIdea(group);
 		}
 	});
-
-	updateGroupBounds(group);
-	layoutGroupChildren(group);
 }
 
 // Relayout position of children with a group
@@ -508,7 +523,6 @@ function createEventHandlers() {
 	$("*").off("mousemove");
 	$("*").off("mouseup");
 	$("*").off("keydown");
-	$("*").off("keypress");
 	$("*").off("dblclick");
 	
 	// Single click select (with Drag)
