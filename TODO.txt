@@ -3,7 +3,6 @@
 BUGS
   * Can't get layout to work without a delay which causes a FLASH
   * Items still get wrapped incorrectly sometimes within groups
-  * Make editbox of a group item appear ABOVE others
   * Deal with long lines in list view
   * Can't delete group with 5 children (transaction error)
   * On appspot, I occasionally get "Transaction collision. Retrying...", and it appears that the transaction never completed

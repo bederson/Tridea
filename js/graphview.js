@@ -150,18 +150,17 @@ function editIdeaVis(node) {
 	node.removeClass("hilited");
 	var id = node.attr("id");
 	var origText = node.text();
-	var origLeft = node.position().left;
-	var origTop = node.position().top;
-	var html = "<textarea id='ideaBoxVis' class='item' style='position:absolute'></textarea>";
 	var parent = node.parent();
 	if (parent.hasClass("group")) {
-		node.append(html);		// Add textbox to end of group so it appears on top
+		var left = parent.position().left + node.position().left;
+		var top = parent.position().top + node.position().top;
 	} else {
-		node.append(html);
+		var left = node.position().left;
+		var top = node.position().top;
 	}
+	var html = "<textarea id='ideaBoxVis' style='position:absolute; left:" + left + "px; top:" + top + "px;'></textarea>";
+	$("#ideas").append(html);
 	var ideaBox = $("#ideaBoxVis");
-	ideaBox.css("left", 0);
-	ideaBox.css("top", 0);
 	ideaBox.val(origText);
 	ideaBox.autogrow();
 	ideaBox.select();
@@ -181,6 +180,7 @@ function saveAndCloseIdeaVis() {
 	if (ideaBox.length > 0) {
 		var node = $(".editing");
 		var text = ideaBox.val();
+		ideaBox.remove();
 		node.html(text);
 		node.removeClass("editing");
 		if (node.hasClass("groupLabel")) {
