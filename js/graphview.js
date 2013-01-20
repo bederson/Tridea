@@ -20,11 +20,11 @@ var groupVGap = 15;
 var groupVMargin = 20;
 var groupHMargin = 10;
 var groupHorVar = 20;
-var groupVerVar = 3;
+var groupVerVar = 5;
 var noIdYet = "NO_ID";
 
 function displayIdeasByGraph() {
-	display = "graph";	
+	display = "graph";
 	displayIdeas();
 }
 
@@ -33,31 +33,28 @@ function displayIdeasGrouped(ideas) {
 		$("#resultsNote").append("- Double-click anywhere to add one");
 	}
 
-	var html = "";
 	for (var i=0; i<ideas.length; i++) {
 		var idea = ideas[i];
 		
 		if (idea.children.length == 0) {
 			// Standalone ideas (not in a group)
-			html += genIdeaHTML(idea.idea, idea.id, idea.x, idea.y);
+			genIdeaHTML(idea.idea, idea.id, idea.x, idea.y, true);
 		} else {
 			// Group
-			html += genGroupHTML(idea);
+			genGroupHTML(idea);
 		}
 	}
 
-	$("#ideas").append(html);
 	createEventHandlers();
-	
-	// Update idea bounds
-	$(".item").each(function() {
-		updateItemBounds($(this));
-	});
-	
-	// Update bounds of each group
-	$(".group").each(function() {
-		updateGroupBounds($(this));
-	});
+
+	// TODO: HELP - item height's are set properly after they are inserted into the DOM
+	// so layout is broken. Instead, if I wait a bit, and then layout, then the heights
+	// are propertly computed and everything is fine - but this solution results in a screen flash.
+	setTimeout(function() {
+		$(".group").each(function() {
+			layoutGroupChildren($(this));
+		})
+	}, 50);
 }
 
 function genGroupHTML(idea) {
@@ -69,43 +66,40 @@ function genGroupHTML(idea) {
 	var rectImageName = "images/rect" + rectNum + ".png";
 
 	// First create group
-	var vgaps = [];
-	var vgap = 0;
-	for (var i=0; i<numChildren; i++) {
-		gap = Math.ceil(Math.random() * groupVerVar);
-		vgaps[i] = gap;
-		vgap += gap;
-	}
-	var height = (2 * groupVMargin) + numChildren * itemHeight + vgap;
 	var html = "";
-	html += "<div id='" + idea.id + "' class='group draggable' behavior='selectable' style='position:absolute; left:" + idea.x + "px; top:" + idea.y + "px;'>";
-	html += "<img src='" + rectImageName + "' style='position:absolute' width=200px height=" + height + "px></img>";
+	var maxGroupWidth = TEXT_MAX_WIDTH + (2* groupHMargin) + groupHorVar;
+	html += "<div id='" + idea.id + "' class='group draggable' behavior='selectable' style='position:absolute; left:" + idea.x + "px; top:" + idea.y + "px; width:" + maxGroupWidth + "px'>";
+	html += "<img src='" + rectImageName + "' style='position:absolute'></img>";
 	html += "<span class='groupLabel editable' style='position:absolute; left:50px; top:-10px; white-space:nowrap;'>" + idea.idea + "</span>";
 
 	// Then add children
 	for (var i=0; i<numChildren; i++) {
 		var child = children[i];
-		if (i == 0) {
-			var x = groupHMargin + groupHorVar;		// Always put first item all the way to the right (to avoid looking hierarchical)
-		} else {
-			var x = groupHMargin + Math.floor(Math.random() * groupHorVar);
-		}
-		var y = groupVMargin + i * itemHeight + vgaps[i];
-		html += genIdeaHTML(child.idea, child.id, x, y);
+		html += genIdeaHTML(child.idea, child.id, 0, 0, false);
 	}
 	
 	html += "</div>";
-
-	return html;
+	
+	$("#ideas").append(html);
+	
+	layoutGroupChildren($("#" + idea.id))
 }
 
-function genIdeaHTML(text, id, x, y) {
+function genIdeaHTML(text, id, x, y, addToDOM) {
 	var html = "";
 
-	html += "<div id='" + id + "' class='item draggable editable' behavior='selectable' style='position:absolute; left:" + x + "px; top:" + y + "px;'>";
+	var pos = "";
+	if (!(typeof x === 'undefined') && !(typeof y === 'undefined')) {
+		pos = " left:" + x + "px; top:" + y + "px;";
+	}
+	html += "<div id='" + id + "' class='item draggable editable' behavior='selectable' style='position:absolute;" + pos + "'>";
 	html += text;
 	html += "</div>";
 
+	if (addToDOM) {
+		$("#ideas").append(html);
+	}
+	
 	return html;
 }
 
@@ -125,10 +119,8 @@ function addIdeaVis(fatherid, x, y) {
 		saveAndCloseIdeaVis();
 	}
 	
-	var ideas = $("#ideas");
 	var text = "New idea";
-	var html = genIdeaHTML(text, noIdYet, x, y);
-	ideas.append(html);
+	var html = genIdeaHTML(text, noIdYet, x, y, true);
 	editIdeaVis($("#" + noIdYet));
 
 	var data = {
@@ -160,9 +152,13 @@ function editIdeaVis(node) {
 	var origText = node.text();
 	var origLeft = node.position().left;
 	var origTop = node.position().top;
-	// var html = "<input type='text' id='ideaBoxVis' style='position:absolute'></input>";
-	var html = "<textarea id='ideaBoxVis' style='position:absolute'></textarea>";
-	node.append(html);
+	var html = "<textarea id='ideaBoxVis' class='item' style='position:absolute'></textarea>";
+	var parent = node.parent();
+	if (parent.hasClass("group")) {
+		node.append(html);		// Add textbox to end of group so it appears on top
+	} else {
+		node.append(html);
+	}
 	var ideaBox = $("#ideaBoxVis");
 	ideaBox.css("left", 0);
 	ideaBox.css("top", 0);
@@ -176,8 +172,6 @@ function editIdeaVis(node) {
 		// Return or ESC key
 		if ((evt.keyCode == 13) || (evt.keyCode == 27)) {
 			saveAndCloseIdeaVis();
-		} else {
-			// Grow box to accomodate text
 		}
 	});
 }
@@ -187,16 +181,18 @@ function saveAndCloseIdeaVis() {
 	if (ideaBox.length > 0) {
 		var node = $(".editing");
 		var text = ideaBox.val();
-		if (node.hasClass("groupLabel")) {
-			var id = node.parent().attr("id");
-		} else {
-			var id = node.attr("id");
-		}
 		node.html(text);
 		node.removeClass("editing");
-		updateItemBounds(node);
+		if (node.hasClass("groupLabel")) {
+			var group = node.parent();
+			var id = group.attr("id");
+			layoutGroupChildren(group);
+		} else {
+			var id = node.attr("id");
+			updateItemBounds(node);
+		}
 
-		// Safety - shouldn't happen, but be careful
+		// Safety - shouldn't happen (ID not yet assigned), but sometimes it does
 		if (id != noIdYet) {
 			var data = {
 				"idea": text,
@@ -254,7 +250,7 @@ function combineItemsInToGroup(item1, item2) {
 	}
 	var html = genGroupHTML(idea);
 	var ideas = $("#ideas");
-	ideas.append(html);
+//	ideas.append(html);
 	var group = $("#none");
 	
 	moveInToGroup(item1, group);
@@ -368,7 +364,6 @@ function moveOutOfGroup(node) {
 	node.attr("nodedownx", x);
 	node.attr("nodedowny", y);
 
-	updateGroupBounds(group);
 	layoutGroupChildren(group);
 
 	// Update database
@@ -391,24 +386,41 @@ function layoutGroupChildren(group) {
 	if (!group.hasClass("group")) {
 		return;
 	}
+
+	var maxGroupWidth = TEXT_MAX_WIDTH + (2* groupHMargin) + groupHorVar;
+	group.width(maxGroupWidth);
 	
 	var children = group.children();
-	var i = 0;
+	var firstChild = true;
+	var x = groupHMargin + groupHorVar;		// Always put first item all the way to the right (to avoid looking hierarchical)
+	var y = groupVMargin;
+	var maxWidth = 0;
 	children.each(function() {
 		var child = $(this);
 		if (child.hasClass("item")) {
-			gap = Math.ceil(Math.random() * groupVerVar);
-			if (i == 0) {
-				var x = groupHMargin + groupHorVar;		// Always put first item all the way to the right (to avoid looking hierarchical)
+			updateItemBounds(child);
+			var gap = 2 + Math.ceil(Math.random() * groupVerVar);
+			if (firstChild) {
+				firstChild = false;
 			} else {
-				var x = groupHMargin + Math.floor(Math.random() * groupHorVar);
+				x = groupHMargin + Math.floor(Math.random() * groupHorVar);
 			}
-			var y = groupVMargin + i * itemHeight + gap;
 			child.css("left", x);
 			child.css("top", y);
-			i += 1;
+			var width = child.width();
+			maxWidth = Math.max(width, maxWidth);
+			y += child.height() + gap;
 		}
 	});
+	y += groupVMargin;
+	var groupWidth = maxWidth + (2 * groupHMargin) + groupHorVar + 10;
+	group.width(groupWidth);
+	group.height(y);
+
+	// Update image dimensions
+	var image = group.children("img");
+	image.width(groupWidth);
+	image.height(group.height());
 }
 
 // Update group bounds to include all children
@@ -428,13 +440,13 @@ function updateGroupBounds(group) {
 	});
 	w += groupHMargin + groupHorVar;
 	h += groupVMargin;
-	group.width(w + "px");
-	group.height(h + "px");
+	group.width(w);
+	group.height(h);
 
 	// Update image dimensions
 	var image = group.children("img");
-	image.width(w + "px");
-	image.height(h + "px");
+	image.width(w);
+	image.height(h);
 }
 
 // Node has moved - determine if it should be removed from or added to any groups

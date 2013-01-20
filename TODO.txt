@@ -1,12 +1,14 @@
 => Channel push
 
 BUGS
-  * Deal with multi-line items in groups
+  * Can't get layout to work without a delay which causes a FLASH
+  * Items still get wrapped incorrectly sometimes within groups
+  * Make editbox of a group item appear ABOVE others
+  * Deal with long lines in list view
   * Can't delete group with 5 children (transaction error)
   * On appspot, I occasionally get "Transaction collision. Retrying...", and it appears that the transaction never completed
 
 SPECIFICS
-* Auto-resize the textbox while editing
   * Pause incremental updates while editing (any recent interaction or open textbox)
   * Make sure you can ungroup on the same interaction that you initially grouped with 
     (to address problem when you start with two boxes on top of each other)
@@ -41,8 +43,8 @@ LATER
 OPTIONAL
   * Search
      - Click on person to see all ideas by that person
-  * Channels to auto-refresh
   * More encouragement for short contributions (meter, red color when getting long)
+  * Goals to encourage a given number of contributions
 
 BUGS
   * Anne: Pressing save multiple times in a row can save the same item multiple times

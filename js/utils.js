@@ -62,6 +62,9 @@ function getURLParameter(name) {
 						letterSpacing: input.css('letterSpacing'),
 						resize: 'none'
 					});
+					tester.appendTo(document.body);
+				} else {
+					tester.css("width", "auto");
 				}
 			var check = function() {
 				var times = function(string, number) {
@@ -95,7 +98,6 @@ function getURLParameter(name) {
 				var newHeight = Math.max(tester.height() + 20, minHeight);
 				input.height(newHeight);
 			};
-			tester.appendTo(document.body);
 
 			$(this).change(check).keyup(check).keydown(check);
 			check.apply(this);

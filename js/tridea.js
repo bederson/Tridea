@@ -18,6 +18,9 @@ $(function() {
 	// Initialization goes here
 });
 
+$(window).load(function() {
+})
+
 // Load the page with the requested view
 function showView(display) {
 	var topicid = getURLParameter("topicid");
