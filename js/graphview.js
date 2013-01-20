@@ -651,3 +651,15 @@ function createEventHandlers() {
 		addIdeaVis(topicid, x, y);
 	});
 }
+
+/////////////////////////
+// Channel support
+/////////////////////////
+
+function handleMove(data) {
+	var node = $("#" + data.id);
+	node.animate({
+		"left": data.x + "px",
+		"top": data.y + "px"
+	});
+}

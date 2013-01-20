@@ -16,10 +16,8 @@
 
 $(function() {
 	// Initialization goes here
+	initChannel();
 });
-
-$(window).load(function() {
-})
 
 // Load the page with the requested view
 function showView(display) {
@@ -143,4 +141,39 @@ function unlikeIdea() {
 	$.post("/unlike", {"id" : id}, function() {
 		window.location.reload();
 	});
+}
+
+/////////////////////////
+// Channel support
+/////////////////////////
+
+function initChannel() {
+	channel = new goog.appengine.Channel(token);
+	socket = channel.open();
+	socket.onopen = onOpened;
+	socket.onmessage = onMessage;
+	socket.onerror = onError;
+	socket.onclose = onClose;
+}
+
+onOpened = function() {
+	console.log("Channel OPENED");
+}
+
+onMessage = function(message) {
+	var data = message.data;
+	dataObj = jQuery.parseJSON(data);
+	
+	if (dataObj.type == "move") {
+		handleMove(dataObj);
+	}
+}
+
+onError = function(error) {
+	console.log("Channel ERROR: ");
+	console.log(error);
+}
+
+onClose = function() {
+	console.log("Channel CLOSE");
 }

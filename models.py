@@ -195,3 +195,7 @@ class Idea(db.Model):
 class LikedIdea(db.Model):
 	author = db.UserProperty(auto_current_user_add=True)
 	idea = db.ReferenceProperty(Idea)
+
+class Connection(db.Model):
+	user = db.UserProperty(auto_current_user_add=True)
+	topic = db.ReferenceProperty(Idea)

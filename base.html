@@ -19,21 +19,11 @@ limitations under the License.
   <head>
 	<title>{% block title %}Tridea{% endblock %}</title>
 	<link type="text/css" rel="stylesheet" href="/css/main.css" />
+	<script type="text/javascript" src="/_ah/channel/jsapi"></script>
 	<script type="text/javascript" src="js/jquery-1.8.3.min.js"></script>
 	<script type="text/javascript" src="js/utils.js"></script>
 	{% block scripts %}{% endblock %}
 	<script type="text/javascript" src="js/tridea.js"></script>
-	<script type="text/javascript">
-		logged_in = {{ logged_in }};
-		if (logged_in) {
-			user_id = "{{ user.user_id }}";
-		} else {
-			user_id = "";
-		}
-		$(function() {
-			{% block display %}{% endblock %}
-		});
-	</script>
   </head>
   <body>
 	<!-- HEADER -->
@@ -51,5 +41,17 @@ limitations under the License.
 	</table>
 	<p>
 	{% block content %}{% endblock %}
+	<script type="text/javascript">
+		logged_in = {{ logged_in }};
+		if (logged_in) {
+			user_id = "{{ user.user_id }}";
+		} else {
+			user_id = "";
+		}
+		token = "{{ token }}";
+		$(function() {
+			{% block display %}{% endblock %}
+		});
+	</script>
   </body>
 </html>

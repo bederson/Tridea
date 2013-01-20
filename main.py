@@ -24,6 +24,7 @@ import datetime
 from models import *
 from google.appengine.ext.webapp import template
 from google.appengine.api import users
+from google.appengine.api import channel
 
 def get_login_template_values(requestHandler):
 	"""Return a dictionary of template values used for login template"""
@@ -44,11 +45,19 @@ def get_login_template_values(requestHandler):
 	}
 	return template_values
 
+def send_update(client_id, message):
+	user = users.get_current_user()
+	conns = Connection.all()
+	for conn in conns:
+		if user != conn.user:
+			client_id = conn.user.user_id() + str(conn.topic.key().id())
+			channel.send_message(client_id, json.dumps(message))
+
 class TopicHandler(webapp2.RequestHandler):
 	def get(self):
 		template_values = get_login_template_values(self)
 		template_values['admin'] = users.is_current_user_admin()
-		
+
 		path = os.path.join(os.path.dirname(__file__), 'topicview.html')
 		self.response.out.write(template.render(path, template_values))
 
@@ -63,7 +72,22 @@ class IdeaListHandler(webapp2.RequestHandler):
 class IdeaGraphHandler(webapp2.RequestHandler):
 	def get(self):
 		template_values = get_login_template_values(self)
-		template_values['topicid'] = self.request.get("topicid")
+		topicid = self.request.get("topicid")
+		template_values['topicid'] = topicid
+
+		# Channel support
+		user = users.get_current_user()
+		if user:
+			token = channel.create_channel(user.user_id() + topicid)
+			template_values['token'] = token
+			conns = Connection.all()
+			conns = conns.filter('user =', user)
+			conns = conns.filter('topic =', Idea.get_by_id(int(topicid)))
+			if conns.count() == 0:
+				conn = Connection()
+				conn.user = user
+				conn.topic = Idea.get_by_id(int(topicid))
+				conn.put()
 
 		path = os.path.join(os.path.dirname(__file__), 'graphview.html')
 		self.response.out.write(template.render(path, template_values))
@@ -142,6 +166,16 @@ class MoveHandler(webapp2.RequestHandler):
 		if ideaObj:
 			ideaObj.moveIdea(x=x, y=y)
 
+			# Update clients
+			message = {
+				"type": "move",
+				"id": idStr,
+				"x": x,
+				"y": y
+			}
+			topic_id = str(ideaObj.key().id())
+			send_update(topic_id, message)
+
 class QueryTopicsHandler(webapp2.RequestHandler):
 	# Returns all topics in alphabetical order
 	def get(self):
@@ -219,7 +253,7 @@ class QueryIdeasHandler(webapp2.RequestHandler):
 					count += 1
 			else:
 				# Don't know why children has a key that isn't in DB - log error
-				logging.info("DB corruption warning: children contains key that isn't in DB: %s", ideaObjKey)
+				logging.warning("DB corruption warning: children contains key that isn't in DB: %s", ideaObjKey)
 		return ideaJSON, count
 
 	def createIdeaJSON(self, ideaObj):
