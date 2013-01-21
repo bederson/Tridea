@@ -86,6 +86,7 @@ class TopicHandler(webapp2.RequestHandler):
 class IdeaListHandler(webapp2.RequestHandler):
 	def get(self):
 		template_values = get_login_template_values(self)
+		topicid = self.request.get("topicid")
 		template_values['topicid'] = self.request.get("topicid")
 
 		client_id, token = connect(topicid)		# New user connection

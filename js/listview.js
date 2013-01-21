@@ -99,7 +99,8 @@ function addIdea(fatherId) {
 	$("#ideaSave").click(function() {
 		var text = $("#ideaBox").val();
 		var data = {
-			"idea": text, 
+			"client_id": client_id,
+			"idea": text,
 			"x": 50,
 			"y": 50,
 			"father": fatherId

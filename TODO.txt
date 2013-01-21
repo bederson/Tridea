@@ -1,6 +1,6 @@
 => Channel push
   - Only send NEW after initial edit
-  - NEW in listview
+    Fix by adding "notsaved" tag to item, and then check that in saveAndCloseIdea and post /new instead of /edit
   - Like
   - Unlike
   - Grouping support

@@ -148,12 +148,15 @@ function unlikeIdea() {
 /////////////////////////
 
 function initChannel() {
-	channel = new goog.appengine.Channel(token);
-	socket = channel.open();
-	socket.onopen = onOpened;
-	socket.onmessage = onMessage;
-	socket.onerror = onError;
-	socket.onclose = onClose;
+	console.log("initChannel - token: '" + token + "'");
+	if (token != "") {
+		channel = new goog.appengine.Channel(token);
+		socket = channel.open();
+		socket.onopen = onOpened;
+		socket.onmessage = onMessage;
+		socket.onerror = onError;
+		socket.onclose = onClose;
+	}
 }
 
 onOpened = function() {
