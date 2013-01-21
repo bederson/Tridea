@@ -24,3 +24,6 @@ handlers:
 libraries:
 - name: webapp2
   version: "2.5.2"
+
+inbound_services:
+- channel_presence

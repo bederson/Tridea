@@ -1,8 +1,4 @@
 => Channel push
-  - Support same user logged in multiple times
-  - Support presence
-  - Garbage collect old connections
-
   - Hide orig item under edit node
 
 BUGS

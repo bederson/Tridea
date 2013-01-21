@@ -203,5 +203,5 @@ class LikedIdea(db.Model):
 	idea = db.ReferenceProperty(Idea)
 
 class Connection(db.Model):
-	user_id = db.StringProperty()
+	client_id = db.StringProperty()
 	topic = db.ReferenceProperty(Idea)

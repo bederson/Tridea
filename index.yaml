@@ -13,4 +13,9 @@ indexes:
 - kind: Connection
   properties:
   - name: topic
+  - name: client_id
+
+- kind: Connection
+  properties:
+  - name: topic
   - name: user_id

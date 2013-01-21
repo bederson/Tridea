@@ -54,24 +54,23 @@ def connect(topicid):
 	client_id = user_id + topicid
 	token = channel.create_channel(client_id)
 	conns = Connection.all()
-	conns = conns.filter('user =', user_id)
+	conns = conns.filter('client_id =', client_id)
 	conns = conns.filter('topic =', Idea.get_by_id(int(topicid)))
 	if conns.count() == 0:
 		conn = Connection()
-		conn.user_id = user_id
+		conn.client_id = client_id
 		conn.topic = Idea.get_by_id(int(topicid))
 		conn.put()
 
-	return user_id, token
+	return client_id, token
 
-def send_message(user_id, topicid, message):
+def send_message(client_id, topicid, message):
 	"""Send message to all listeners (except self) to this topic"""
 	conns = Connection.all()
 	conns = conns.filter('topic =', Idea.get_by_id(int(topicid)))
-	conns = conns.filter('user_id !=', user_id)
+	conns = conns.filter('client_id !=', client_id)
 	for conn in conns:
-		client_id = conn.user_id + topicid
-		channel.send_message(client_id, json.dumps(message))
+		channel.send_message(conn.client_id, json.dumps(message))
 
 #####################
 # Page Handlers
@@ -98,8 +97,8 @@ class IdeaGraphHandler(webapp2.RequestHandler):
 		topicid = self.request.get("topicid")
 		template_values['topicid'] = topicid
 
-		user_id, token = connect(topicid)		# New user connection
-		template_values['user_id'] = user_id
+		client_id, token = connect(topicid)		# New user connection
+		template_values['client_id'] = client_id
 		template_values['token'] = token
 
 		path = os.path.join(os.path.dirname(__file__), 'graphview.html')
@@ -163,7 +162,7 @@ class ReparentHandler(webapp2.RequestHandler):
 class EditHandler(webapp2.RequestHandler):
 	# Edits an existing idea
 	def post(self):
-		user_id = self.request.get('user_id')
+		client_id = self.request.get('client_id')
 		idea = self.request.get('idea')
 		idStr = self.request.get('id')
 		ideaObj = Idea.get_by_id(int(idStr))
@@ -177,12 +176,12 @@ class EditHandler(webapp2.RequestHandler):
 				"text": idea,
 			}
 			topic_id = str(ideaObj.getTopic().key().id())
-			send_message(user_id, topic_id, message)
+			send_message(client_id, topic_id, message)		# Update other clients about this change
 
 class MoveHandler(webapp2.RequestHandler):
 	# Edits an existing idea
 	def post(self):
-		user_id = self.request.get('user_id')
+		client_id = self.request.get('client_id')
 		idStr = self.request.get('id')
 		x = int(float(self.request.get('x')))
 		y = int(float(self.request.get('y')))
@@ -198,7 +197,7 @@ class MoveHandler(webapp2.RequestHandler):
 				"y": y
 			}
 			topic_id = str(ideaObj.getTopic().key().id())
-			send_message(user_id, topic_id, message)
+			send_message(client_id, topic_id, message)		# Update other clients about this change
 
 class QueryTopicsHandler(webapp2.RequestHandler):
 	# Returns all topics in alphabetical order
@@ -296,6 +295,22 @@ class QueryIdeasHandler(webapp2.RequestHandler):
 		}
 		return ideaJSON
 
+class ConnectedHandler(webapp2.RequestHandler):
+	# Notified when clients connect
+	def post(self):
+		client_id = self.request.get("from")
+		# logging.info("CONNECT: %s", client_id)
+		# Not doing anything here yet...
+
+class DisconnectedHandler(webapp2.RequestHandler):
+	# Notified when clients disconnect
+	def post(self):
+		client_id = self.request.get("from")
+		# logging.info("DISCONNECT: %s", client_id)
+		connection = Connection().all()
+		connection.filter("client_id =", client_id)
+		db.delete(connection);
+
 app = webapp2.WSGIApplication([
 	('/', TopicHandler),
 	('/idealist', IdeaListHandler),
@@ -308,5 +323,7 @@ app = webapp2.WSGIApplication([
 	('/qtopics', QueryTopicsHandler),
 	('/qideas', QueryIdeasHandler),
 	('/like', LikeHandler),
-	('/unlike', UnlikeHandler)
+	('/unlike', UnlikeHandler),
+	('/_ah/channel/connected/', ConnectedHandler),
+	('/_ah/channel/disconnected/', DisconnectedHandler)
 ], debug=True)

@@ -106,7 +106,7 @@ function genIdeaHTML(text, id, x, y, addToDOM) {
 function savePosition(idea) {
 	var pos = idea.position();
 	var data = {
-		"user_id": user_id,
+		"client_id": client_id,
 		"id": idea[0].id,
 		"x": pos.left,
 		"y": pos.top
@@ -192,7 +192,7 @@ function saveAndCloseIdeaVis() {
 		if (id != noIdYet) {
 			// Update database
 			var data = {
-				"user_id": user_id,
+				"client_id": client_id,
 				"idea": text,
 				"id": id
 			};

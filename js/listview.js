@@ -146,7 +146,7 @@ function editIdea() {
 	$("#ideaSave").click(function() {
 		var idea = $("#ideaBox").val();
 		var data = {
-			"user_id": user_id,
+			"client_id": client_id,
 			"idea": idea,
 			"id": id
 		};
