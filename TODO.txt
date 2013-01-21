@@ -1,5 +1,9 @@
 => Channel push
-  - Hide orig item under edit node
+  - Only send NEW after initial edit
+  - NEW in listview
+  - Like
+  - Unlike
+  - Grouping support
 
 BUGS
   * Can't get layout to work without a delay which causes a FLASH

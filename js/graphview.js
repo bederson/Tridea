@@ -168,6 +168,7 @@ function editIdeaVis(node) {
 	}
 	var html = "<textarea id='ideaBoxVis' style='position:absolute; left:" + left + "px; top:" + top + "px;'></textarea>";
 	$("#ideas").append(html);
+	node.css("visibility", "hidden");
 	var ideaBox = $("#ideaBoxVis");
 	ideaBox.val(origText);
 	ideaBox.autogrow();
@@ -217,9 +218,11 @@ function changeIdeaTextLocal(node, text) {
 		// Update group label text
 		var groupLabel = node.children(".groupLabel");
 		groupLabel.html(text);
+		groupLabel.css("visibility", "visible");
 	} else {
 		// Update regular node text
 		node.html(text);
+		node.css("visibility", "visible");
 	}
 
 	var id = node.attr("id");
