@@ -171,7 +171,11 @@ function cancelAddIdea() {
 
 function deleteIdea() {
 	var id = $(".editActive").attr("id");
-	$.post("/delete", {"id" : id}, function() {
+	var data = {
+		"client_id": client_id,
+		"id": id,
+	}
+	$.post("/delete", data, function() {
 		window.location.reload();
 	});
 }

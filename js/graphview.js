@@ -114,19 +114,26 @@ function savePosition(idea) {
 	$.post("/move", data);
 }
 
-function addIdeaVis(fatherid, x, y) {
+function moveIdeaLocal(node, x, y) {
+	node.animate({
+		"left": x + "px",
+		"top": y + "px"
+	});
+}
+
+function addIdeaVis(text, fatherid, x, y) {
 	// Save any open idea boxes
 	if ($("#ideaBoxVis").size() > 0) {
 		saveAndCloseIdeaVis();
 	}
 	
-	var text = "New idea";
-	var html = genIdeaHTML(text, noIdYet, x, y, true);
+	genIdeaHTML(text, noIdYet, x, y, true);
 	editIdeaVis($("#" + noIdYet));
 
 	var data = {
-		"action":"id", 
-		"idea": text, 
+		"client_id": client_id,
+		"action": "id",
+		"idea": text,
 		"x": x,
 		"y": y,
 		"father": fatherid
@@ -186,7 +193,7 @@ function saveAndCloseIdeaVis() {
 		if (node.hasClass("groupLabel")) {
 			node = node.parent();
 		}
-		id = changeIdeaText(node, text);
+		id = changeIdeaTextLocal(node, text);
 
 		// Safety - shouldn't happen (ID not yet assigned), but sometimes it does
 		if (id != noIdYet) {
@@ -205,7 +212,7 @@ function saveAndCloseIdeaVis() {
 }
 
 // Changes the text in an idea LOCALLY (does not update database)
-function changeIdeaText(node, text) {
+function changeIdeaTextLocal(node, text) {
 	if (node.hasClass("group")) {
 		// Update group label text
 		var groupLabel = node.children(".groupLabel");
@@ -244,10 +251,21 @@ function deleteIdea(node) {
 			node = node.parent();
 		}
 		var id = node.attr("id");
-		node.remove();
-		$.post("/delete", {"id" : id});
+		deleteIdeaLocal(node);
+		
+		var data = {
+			"client_id": client_id,
+			"id": id,
+		}
+		$.post("/delete", data);
 	}
 }
+
+
+function deleteIdeaLocal(node) {
+	node.remove();
+}
+
 
 /////////////////////
 // GROUP MANAGEMENT
@@ -673,7 +691,7 @@ function createEventHandlers() {
 		var ideasPos = $("#ideas").position();
 		var x = evt.pageX - ideasPos.left;
 		var y = evt.pageY - ideasPos.top;
-		addIdeaVis(topicid, x, y);
+		addIdeaVis("New idea", topicid, x, y);
 	});
 }
 
@@ -684,14 +702,27 @@ function createEventHandlers() {
 function handleMove(data) {
 	console.log("MOVE message received: " + data.id);
 	var node = $("#" + data.id);
-	node.animate({
-		"left": data.x + "px",
-		"top": data.y + "px"
-	});
+	moveIdeaLocal(node, data.x, data.y);
 }
 
 function handleEdit(data) {
 	console.log("EDIT message received: " + data.id);
 	var node = $("#" + data.id);
-	changeIdeaText(node, data.text);
+	changeIdeaTextLocal(node, data.text);
+}
+
+function handleDelete(data) {
+	console.log("DELETE message received: " + data.id);
+	var node = $("#" + data.id);
+	deleteIdeaLocal(node);
+}
+
+function handleNew(data) {
+	console.log("NEW message received");
+	var id = data.id;
+	var text = data.text;
+	var x = data.x;
+	var y = data.y;
+	genIdeaHTML(text, id, x, y, true);
+	createEventHandlers();
 }

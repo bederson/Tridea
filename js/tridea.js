@@ -148,9 +148,6 @@ function unlikeIdea() {
 /////////////////////////
 
 function initChannel() {
-	console.log("initChannel");
-	console.log("client_id: " + client_id);
-	console.log("token: " + token);
 	channel = new goog.appengine.Channel(token);
 	socket = channel.open();
 	socket.onopen = onOpened;
@@ -160,17 +157,21 @@ function initChannel() {
 }
 
 onOpened = function() {
-	console.log("Channel OPENED");
 }
 
 onMessage = function(message) {
 	var data = message.data;
 	dataObj = jQuery.parseJSON(data);
+//	console.log(dataObj);
 	
 	if (dataObj.op == "move") {
 		handleMove(dataObj);
-	} else if (dataObj.op = "edit") {
+	} else if (dataObj.op == "edit") {
 		handleEdit(dataObj);
+	} else if (dataObj.op == "delete") {
+		handleDelete(dataObj);
+	} else if (dataObj.op == "new") {
+		handleNew(dataObj);
 	}
 }
 
@@ -180,5 +181,4 @@ onError = function(error) {
 }
 
 onClose = function() {
-	console.log("Channel CLOSE");
 }

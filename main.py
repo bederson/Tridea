@@ -88,6 +88,10 @@ class IdeaListHandler(webapp2.RequestHandler):
 		template_values = get_login_template_values(self)
 		template_values['topicid'] = self.request.get("topicid")
 
+		client_id, token = connect(topicid)		# New user connection
+		template_values['client_id'] = client_id
+		template_values['token'] = token
+
 		path = os.path.join(os.path.dirname(__file__), 'listview.html')
 		self.response.out.write(template.render(path, template_values))
 
@@ -121,14 +125,24 @@ class DeleteHandler(webapp2.RequestHandler):
 	# If top-level "topic", then recursively deletes all descendants
 	# If regular "idea", then promotes descendants
 	def post(self):
+		client_id = self.request.get('client_id')
 		idStr = self.request.get('id')
 		ideaObj = Idea.get_by_id(int(idStr))
 		ideaObj.deleteRecurse()
+
+		# Update clients
+		message = {
+			"op": "delete",
+			"id": idStr,
+		}
+		topic_id = str(ideaObj.getTopic().key().id())
+		send_message(client_id, topic_id, message)		# Update other clients about this change
 
 class NewHandler(webapp2.RequestHandler):
 	"""Creates a new idea. Either returns JSON with the new id, or redirects to the specified page"""
 	# Inserts an idea into hierarchy)
 	def post(self):
+		client_id = self.request.get('client_id')
 		idea = self.request.get('idea')
 		fatherId = self.request.get('father')
 		x = int(self.request.get('x', default_value='0'))
@@ -143,6 +157,18 @@ class NewHandler(webapp2.RequestHandler):
 		result = {
 			'id' : idStr
 		}
+
+		# Update clients
+		message = {
+			"op": "new",
+			"id": idStr,
+			"text": idea,
+			"x": x,
+			"y": y
+		}
+		topic_id = str(ideaObj.getTopic().key().id())
+		send_message(client_id, topic_id, message)		# Update other clients about this change
+
 		if action == 'id':
 			self.response.headers['Content-Type'] = 'application/json'
 			self.response.out.write(json.dumps(result))
