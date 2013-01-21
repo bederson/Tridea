@@ -106,9 +106,10 @@ function genIdeaHTML(text, id, x, y, addToDOM) {
 function savePosition(idea) {
 	var pos = idea.position();
 	var data = {
-		"id" : idea[0].id,
-		"x" : pos.left,
-		"y" : pos.top
+		"user_id": user_id,
+		"id": idea[0].id,
+		"x": pos.left,
+		"y": pos.top
 	};
 	$.post("/move", data);
 }
@@ -191,6 +192,7 @@ function saveAndCloseIdeaVis() {
 		if (id != noIdYet) {
 			// Update database
 			var data = {
+				"user_id": user_id,
 				"idea": text,
 				"id": id
 			};

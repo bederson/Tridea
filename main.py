@@ -45,14 +45,37 @@ def get_login_template_values(requestHandler):
 	}
 	return template_values
 
-def send_update(client_id, message):
-	user = users.get_current_user()
+#####################
+# Channel support
+#####################
+def connect(topicid):
+	"""User has connected, so remember that"""
+	user_id = str(random.randint(1000000000000, 10000000000000))
+	client_id = user_id + topicid
+	token = channel.create_channel(client_id)
 	conns = Connection.all()
-	for conn in conns:
-		if user != conn.user:
-			client_id = conn.user.user_id() + str(conn.topic.key().id())
-			channel.send_message(client_id, json.dumps(message))
+	conns = conns.filter('user =', user_id)
+	conns = conns.filter('topic =', Idea.get_by_id(int(topicid)))
+	if conns.count() == 0:
+		conn = Connection()
+		conn.user_id = user_id
+		conn.topic = Idea.get_by_id(int(topicid))
+		conn.put()
 
+	return user_id, token
+
+def send_message(user_id, topicid, message):
+	"""Send message to all listeners (except self) to this topic"""
+	conns = Connection.all()
+	conns = conns.filter('topic =', Idea.get_by_id(int(topicid)))
+	conns = conns.filter('user_id !=', user_id)
+	for conn in conns:
+		client_id = conn.user_id + topicid
+		channel.send_message(client_id, json.dumps(message))
+
+#####################
+# Page Handlers
+#####################
 class TopicHandler(webapp2.RequestHandler):
 	def get(self):
 		template_values = get_login_template_values(self)
@@ -75,19 +98,9 @@ class IdeaGraphHandler(webapp2.RequestHandler):
 		topicid = self.request.get("topicid")
 		template_values['topicid'] = topicid
 
-		# Channel support
-		user = users.get_current_user()
-		if user:
-			token = channel.create_channel(user.user_id() + topicid)
-			template_values['token'] = token
-			conns = Connection.all()
-			conns = conns.filter('user =', user)
-			conns = conns.filter('topic =', Idea.get_by_id(int(topicid)))
-			if conns.count() == 0:
-				conn = Connection()
-				conn.user = user
-				conn.topic = Idea.get_by_id(int(topicid))
-				conn.put()
+		user_id, token = connect(topicid)		# New user connection
+		template_values['user_id'] = user_id
+		template_values['token'] = token
 
 		path = os.path.join(os.path.dirname(__file__), 'graphview.html')
 		self.response.out.write(template.render(path, template_values))
@@ -150,6 +163,7 @@ class ReparentHandler(webapp2.RequestHandler):
 class EditHandler(webapp2.RequestHandler):
 	# Edits an existing idea
 	def post(self):
+		user_id = self.request.get('user_id')
 		idea = self.request.get('idea')
 		idStr = self.request.get('id')
 		ideaObj = Idea.get_by_id(int(idStr))
@@ -162,12 +176,13 @@ class EditHandler(webapp2.RequestHandler):
 				"id": idStr,
 				"text": idea,
 			}
-			topic_id = str(ideaObj.key().id())
-			send_update(topic_id, message)
+			topic_id = str(ideaObj.getTopic().key().id())
+			send_message(user_id, topic_id, message)
 
 class MoveHandler(webapp2.RequestHandler):
 	# Edits an existing idea
 	def post(self):
+		user_id = self.request.get('user_id')
 		idStr = self.request.get('id')
 		x = int(float(self.request.get('x')))
 		y = int(float(self.request.get('y')))
@@ -182,8 +197,8 @@ class MoveHandler(webapp2.RequestHandler):
 				"x": x,
 				"y": y
 			}
-			topic_id = str(ideaObj.key().id())
-			send_update(topic_id, message)
+			topic_id = str(ideaObj.getTopic().key().id())
+			send_message(user_id, topic_id, message)
 
 class QueryTopicsHandler(webapp2.RequestHandler):
 	# Returns all topics in alphabetical order

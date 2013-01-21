@@ -148,6 +148,9 @@ function unlikeIdea() {
 /////////////////////////
 
 function initChannel() {
+	console.log("initChannel");
+	console.log("user_id: " + user_id);
+	console.log("token: " + token);
 	channel = new goog.appengine.Channel(token);
 	socket = channel.open();
 	socket.onopen = onOpened;

@@ -134,6 +134,12 @@ class Idea(db.Model):
 		self.y = y
 		self.put()
 
+	def getTopic(self):
+		if self.father == None:
+			return self
+		else:
+			return self.father.getTopic()
+
 	@db.transactional(xg=True)
 	def reparent(self, newParentObj):
 		# TODO: be sure to handle likes
@@ -197,5 +203,5 @@ class LikedIdea(db.Model):
 	idea = db.ReferenceProperty(Idea)
 
 class Connection(db.Model):
-	user = db.UserProperty(auto_current_user_add=True)
+	user_id = db.StringProperty()
 	topic = db.ReferenceProperty(Idea)

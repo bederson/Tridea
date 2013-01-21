@@ -145,7 +145,11 @@ function editIdea() {
 
 	$("#ideaSave").click(function() {
 		var idea = $("#ideaBox").val();
-		var data = {"idea" : idea, "id" : id};
+		var data = {
+			"user_id": user_id,
+			"idea": idea,
+			"id": id
+		};
 		$.post("/edit", data, function() {
 			window.location.reload();
 		});
