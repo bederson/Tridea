@@ -164,8 +164,10 @@ onMessage = function(message) {
 	var data = message.data;
 	dataObj = jQuery.parseJSON(data);
 	
-	if (dataObj.type == "move") {
+	if (dataObj.op == "move") {
 		handleMove(dataObj);
+	} else if (dataObj.op = "edit") {
+		handleEdit(dataObj);
 	}
 }
 

@@ -181,19 +181,15 @@ function saveAndCloseIdeaVis() {
 		var node = $(".editing");
 		var text = ideaBox.val();
 		ideaBox.remove();
-		node.html(text);
 		node.removeClass("editing");
 		if (node.hasClass("groupLabel")) {
-			var group = node.parent();
-			var id = group.attr("id");
-			layoutGroupChildren(group);
-		} else {
-			var id = node.attr("id");
-			updateItemBounds(node);
+			node = node.parent();
 		}
+		id = changeIdeaText(node, text);
 
 		// Safety - shouldn't happen (ID not yet assigned), but sometimes it does
 		if (id != noIdYet) {
+			// Update database
 			var data = {
 				"idea": text,
 				"id": id
@@ -204,6 +200,33 @@ function saveAndCloseIdeaVis() {
 			$("*").removeClass("hilited");		// Remove any hiliting
 		}
 	}
+}
+
+// Changes the text in an idea LOCALLY (does not update database)
+function changeIdeaText(node, text) {
+	if (node.hasClass("group")) {
+		// Update group label text
+		var groupLabel = node.children(".groupLabel");
+		groupLabel.html(text);
+	} else {
+		// Update regular node text
+		node.html(text);
+	}
+
+	var id = node.attr("id");
+	var parent = node.parent();
+	if (node.hasClass("group")) {
+		// Item is a group
+		layoutGroupChildren(node);
+	} else if (parent.hasClass("group")) {
+		// Item is member of a group
+		layoutGroupChildren(parent);
+	} else {
+		// Item NOT a group member
+		updateItemBounds(node);
+	}
+
+	return id;
 }
 
 function updateItemBounds(node) {
@@ -657,9 +680,16 @@ function createEventHandlers() {
 /////////////////////////
 
 function handleMove(data) {
+	console.log("MOVE message received: " + data.id);
 	var node = $("#" + data.id);
 	node.animate({
 		"left": data.x + "px",
 		"top": data.y + "px"
 	});
+}
+
+function handleEdit(data) {
+	console.log("EDIT message received: " + data.id);
+	var node = $("#" + data.id);
+	changeIdeaText(node, data.text);
 }

@@ -156,6 +156,15 @@ class EditHandler(webapp2.RequestHandler):
 		if ideaObj:
 			ideaObj.editIdea(idea=idea)
 
+			# Update clients
+			message = {
+				"op": "edit",
+				"id": idStr,
+				"text": idea,
+			}
+			topic_id = str(ideaObj.key().id())
+			send_update(topic_id, message)
+
 class MoveHandler(webapp2.RequestHandler):
 	# Edits an existing idea
 	def post(self):
@@ -168,7 +177,7 @@ class MoveHandler(webapp2.RequestHandler):
 
 			# Update clients
 			message = {
-				"type": "move",
+				"op": "move",
 				"id": idStr,
 				"x": x,
 				"y": y
