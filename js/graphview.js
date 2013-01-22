@@ -272,7 +272,23 @@ function deleteIdea(node) {
 
 
 function deleteIdeaLocal(node) {
+	if (node.hasClass("item")) {
+		updateNumIdeasNote(-1);
+	}
+	if (node.hasClass("group")) {
+		var delta = -1 * node.children(".item").length;
+		updateNumIdeasNote(delta);
+	}
 	node.remove();
+}
+
+function updateNumIdeasNote(delta) {
+	numIdeas = updateNumIdeas(delta);
+	if (numIdeas == 0) {
+		$("#resultsNote").html("- Double-click anywhere to add one");
+	} else {
+		$("#resultsNote").html("");
+	}
 }
 
 
@@ -709,6 +725,7 @@ function createEventHandlers() {
 		var x = evt.pageX - ideasPos.left;
 		var y = evt.pageY - ideasPos.top;
 		addIdeaVis("New idea", x, y);
+		updateNumIdeasNote(1);
 	});
 }
 
@@ -742,6 +759,7 @@ function handleNew(data) {
 	var y = data.y;
 	genIdeaHTML(text, id, x, y, true);
 	createEventHandlers();
+	updateNumIdeasNote(1);
 }
 
 function handleReparent(data) {
@@ -761,6 +779,7 @@ function handleReparent(data) {
 		$("#ideas").append(html);
 		father.remove();
 		father = $("#" + data.newFatherId);
+		updateNumIdeasNote(-1);
 	}
 	if (father.hasClass("group")) {
 		moveInToGroup($("#" + id), father, false);

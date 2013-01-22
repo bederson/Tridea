@@ -20,8 +20,6 @@ var TEXT_MAX_WIDTH = 300;
 var TEXT_MIN_WIDTH = 100;
 var TEXT_GROW_AHEAD = 40;
 
-var display = "list";	// Display type ("list" or "graph")
-
 function getURLParameter(name) {
 	return decodeURI(
 		(RegExp(name + '=' + '(.+?)(&|$)').exec(window.location.search)||[,null])[1]

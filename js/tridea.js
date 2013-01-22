@@ -14,6 +14,9 @@
 // limitations under the License.
 // 
 
+var display = "list";	// Display type ("list" or "graph")
+var numIdeas = 0;
+
 $(function() {
 	// Initialization goes here
 	initChannel();
@@ -47,6 +50,27 @@ function displayIdeas() {
 	$.getJSON("/qideas", queryStr, displayIdeasImpl)
 }
 
+function updateNumIdeas(delta) {
+	numIdeas += delta;
+	displayNumIdeas(numIdeas);
+	
+	return numIdeas;
+}
+
+function displayNumIdeas(count) {
+	numIdeas = count;
+	if (numIdeas == 0) {
+		var numIdeasStr = 'No ideas yet';
+	} else if (numIdeas == 1) {
+		var numIdeasStr = '1 Idea';
+	} else {
+		var numIdeasStr = numIdeas + ' Ideas';
+	}
+	$("#resultsOverview").html(numIdeasStr);
+	
+	return numIdeas;
+}
+
 function displayIdeasImpl(result) {
 	// Make sure this topic is defined
 	if (!('ideas' in result)) {
@@ -55,19 +79,10 @@ function displayIdeasImpl(result) {
 	}
 	
 	$("#loading").css("display", "none");
-	var numIdeas = result['count'];
-	var ideas = result['ideas'];
-	if (numIdeas == 0) {
-		var topicid = result['topicid'];
-		var numIdeasStr = 'No ideas yet';
-	} else if (numIdeas == 1) {
-		var numIdeasStr = '1 Idea';
-	} else {
-		var numIdeasStr = numIdeas + ' Ideas';
-	}
-	$("#resultsOverview").html(numIdeasStr);
+	displayNumIdeas(result['count']);
 	$("#topic").html("<span style='color:gray'>Topic:</span> " + result['topic']);
 
+	var ideas = result['ideas'];
 	if (display == "list") {
 		displayIdeasList(ideas);
 	} else {
