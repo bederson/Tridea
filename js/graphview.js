@@ -121,7 +121,7 @@ function moveIdeaLocal(node, x, y) {
 	});
 }
 
-function addIdeaVis(text, fatherid, x, y) {
+function addIdeaVis(text, x, y) {
 	// Save any open idea boxes
 	if ($("#ideaBoxVis").size() > 0) {
 		saveAndCloseIdeaVis();
@@ -129,23 +129,6 @@ function addIdeaVis(text, fatherid, x, y) {
 	
 	genIdeaHTML(text, noIdYet, x, y, true);
 	editIdeaVis($("#" + noIdYet));
-
-	var data = {
-		"client_id": client_id,
-		"action": "id",
-		"idea": text,
-		"x": x,
-		"y": y,
-		"father": fatherid
-	};
-	$.post("/new", data, function(result) {
-		if (result.id == "") {
-			// Failed to create object
-			$("#" + noIdYet).remove();
-		} else {
-			$("#" + noIdYet).attr("id", result.id);
-		}
-	});
 }
 
 function editIdeaVis(node) {
@@ -196,16 +179,34 @@ function saveAndCloseIdeaVis() {
 		}
 		id = changeIdeaTextLocal(node, text);
 
-		// Safety - shouldn't happen (ID not yet assigned), but sometimes it does
-		if (id != noIdYet) {
-			// Update database
+		if (id == noIdYet) {
+			// Item isn't in database, so create new one
+			var topicid = getURLParameter("topicid");
+			var data = {
+				"client_id": client_id,
+				"action": "id",
+				"idea": text,
+				"x": node.position().left,
+				"y": node.position().top,
+				"father": topicid
+			};
+			$.post("/new", data, function(result) {
+				if (result.id == "") {
+					// TODO: Figure out why failed and how to deal with
+					$("#" + noIdYet).remove();
+				} else {
+					$("#" + noIdYet).attr("id", result.id);
+				}
+			});
+		} else {
+			// Item already in database, so update it
 			var data = {
 				"client_id": client_id,
 				"idea": text,
 				"id": id
 			};
 			$.post("/edit", data);
-
+		
 			$("*").removeClass("selected");		// First remove any existing selection
 			$("*").removeClass("hilited");		// Remove any hiliting
 		}
@@ -690,11 +691,10 @@ function createEventHandlers() {
 
 	// Double click on background to create new item
 	$("#ideas").on("dblclick", function(evt) {
-		var topicid = getURLParameter("topicid");
 		var ideasPos = $("#ideas").position();
 		var x = evt.pageX - ideasPos.left;
 		var y = evt.pageY - ideasPos.top;
-		addIdeaVis("New idea", topicid, x, y);
+		addIdeaVis("New idea", x, y);
 	});
 }
 
@@ -728,4 +728,16 @@ function handleNew(data) {
 	var y = data.y;
 	genIdeaHTML(text, id, x, y, true);
 	createEventHandlers();
+}
+
+function handleLike(data) {
+	console.log("LIKE message received: " + data.id);
+	var node = $("#" + data.id);
+	// TODO: Ignore LIKE events for now since we don't display them
+}
+
+function handleUnlike(data) {
+	console.log("UNLIKE message received: " + data.id);
+	var node = $("#" + data.id);
+	// TODO: Ignore UNLIKE events for now since we don't display them
 }

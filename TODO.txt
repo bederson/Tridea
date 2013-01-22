@@ -1,12 +1,8 @@
 => Channel push
-  - Only send NEW after initial edit
-    Fix by adding "notsaved" tag to item, and then check that in saveAndCloseIdea and post /new instead of /edit
-  - Like
-  - Unlike
   - Grouping support
 
 BUGS
-  * Can't get layout to work without a delay which causes a FLASH
+  * Can't get initial layout to work without a delay which causes a FLASH
   * Items still get wrapped incorrectly sometimes within groups
   * Deal with long lines in list view
   * Can't delete group with 5 children (transaction error)

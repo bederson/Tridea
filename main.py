@@ -111,15 +111,33 @@ class IdeaGraphHandler(webapp2.RequestHandler):
 
 class LikeHandler(webapp2.RequestHandler):
 	def post(self):
+		client_id = self.request.get('client_id')
 		idStr = self.request.get('id')
 		ideaObj = Idea.get_by_id(int(idStr))
 		ideaObj.doLike()
 
+		# Update clients
+		message = {
+			"op": "like",
+			"id": idStr,
+		}
+		topic_id = str(ideaObj.getTopic().key().id())
+		send_message(client_id, topic_id, message)		# Update other clients about this change
+
 class UnlikeHandler(webapp2.RequestHandler):
 	def post(self):
+		client_id = self.request.get('client_id')
 		idStr = self.request.get('id')
 		ideaObj = Idea.get_by_id(int(idStr))
 		ideaObj.doUnlike()
+
+		# Update clients
+		message = {
+			"op": "unlike",
+			"id": idStr,
+		}
+		topic_id = str(ideaObj.getTopic().key().id())
+		send_message(client_id, topic_id, message)		# Update other clients about this change
 
 class DeleteHandler(webapp2.RequestHandler):
 	# Deletes idea from hierarchy

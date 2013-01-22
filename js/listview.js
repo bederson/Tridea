@@ -180,3 +180,43 @@ function deleteIdea() {
 		window.location.reload();
 	});
 }
+
+
+/////////////////////////
+// Channel support
+/////////////////////////
+
+function handleMove(data) {
+	console.log("MOVE message received: " + data.id);
+	var node = $("#" + data.id);
+	window.location.reload();
+}
+
+function handleEdit(data) {
+	console.log("EDIT message received: " + data.id);
+	var node = $("#" + data.id);
+	window.location.reload();
+}
+
+function handleDelete(data) {
+	console.log("DELETE message received: " + data.id);
+	var node = $("#" + data.id);
+	window.location.reload();
+}
+
+function handleNew(data) {
+	console.log("NEW message received");
+	window.location.reload();
+}
+
+function handleLike(data) {
+	console.log("LIKE message received: " + data.id);
+	var node = $("#" + data.id);
+	window.location.reload();
+}
+
+function handleUnlike(data) {
+	console.log("UNLIKE message received: " + data.id);
+	var node = $("#" + data.id);
+	window.location.reload();
+}

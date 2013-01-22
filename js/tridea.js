@@ -131,14 +131,22 @@ function hideIdeaTools(evt) {
 
 function likeIdea() {
 	var id = $(".editActive").attr("id");
-	$.post("/like", {"id" : id}, function() {
+	var data = {
+		"client_id": client_id,
+		"id": id
+	};
+	$.post("/like", data, function() {
 		window.location.reload();
 	});
 }
 
 function unlikeIdea() {
 	var id = $(".editActive").attr("id");
-	$.post("/unlike", {"id" : id}, function() {
+	var data = {
+		"client_id": client_id,
+		"id": id
+	};
+	$.post("/unlike", data, function() {
 		window.location.reload();
 	});
 }
@@ -175,6 +183,10 @@ onMessage = function(message) {
 		handleDelete(dataObj);
 	} else if (dataObj.op == "new") {
 		handleNew(dataObj);
+	} else if (dataObj.op == "like") {
+		handleLike(dataObj);
+	} else if (dataObj.op == "unlike") {
+		handleUnlike(dataObj);
 	}
 }
 
