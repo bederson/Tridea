@@ -779,6 +779,7 @@ function handleReparent(data) {
 		$("#ideas").append(html);
 		father.remove();
 		father = $("#" + data.newFatherId);
+		createEventHandlers();
 		updateNumIdeasNote(-1);
 	}
 	if (father.hasClass("group")) {
