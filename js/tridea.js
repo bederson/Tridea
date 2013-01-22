@@ -156,7 +156,7 @@ function unlikeIdea() {
 /////////////////////////
 
 function initChannel() {
-	console.log("initChannel - token: '" + token + "'");
+//	console.log("initChannel - token: '" + token + "'");
 	if (token != "") {
 		channel = new goog.appengine.Channel(token);
 		socket = channel.open();
@@ -183,6 +183,8 @@ onMessage = function(message) {
 		handleDelete(dataObj);
 	} else if (dataObj.op == "new") {
 		handleNew(dataObj);
+	} else if (dataObj.op == "reparent") {
+		handleReparent(dataObj);
 	} else if (dataObj.op == "like") {
 		handleLike(dataObj);
 	} else if (dataObj.op == "unlike") {

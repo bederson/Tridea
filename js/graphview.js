@@ -118,6 +118,11 @@ function moveIdeaLocal(node, x, y) {
 	node.animate({
 		"left": x + "px",
 		"top": y + "px"
+	}, function() {
+		// Animation complete
+		if (node.parent().hasClass("group")) {
+			updateGroupBounds(node.parent());
+		}
 	});
 }
 
@@ -287,24 +292,23 @@ function combineItemsInToGroup(item1, item2) {
 	var x = Math.min(item1x, item2x);
 	var y = Math.min(item1y, item2y);
 
-	var id = "none";
+	var no_id = "none";
 	var idea = {
-		id: id,
+		id: no_id,
 		idea: "GROUP",
 		children: [],
 		x: x,
 		y: y
 	}
 	var html = genGroupHTML(idea);
-	var ideas = $("#ideas");
-//	ideas.append(html);
-	var group = $("#none");
+	var group = $("#" + no_id);
 	
-	moveInToGroup(item1, group);
-	moveInToGroup(item2, group);
+	moveInToGroup(item1, group, true);
+	moveInToGroup(item2, group, true);
 
 	var topicid = getURLParameter("topicid");
 	var data = {
+		"client_id": client_id,
 		"action": "id",
 		"idea": idea.idea,
 		"x": x,
@@ -317,16 +321,17 @@ function combineItemsInToGroup(item1, item2) {
 //			$("#" + noIdYet).remove();
 			console.log("FAILED TO CREATE NEW GROUP");
 		} else {
-			$("#" + id).attr("id", result.id);
-			createEventHandlers();
+			$("#" + no_id).attr("id", result.id);
 
 			// Reparent items in DB
 			data = {
+				"client_id": client_id,
 				"id": item1.attr("id"),
 				"newFather": result.id
 			};
 			$.post("/reparent", data, function() {
 				data = {
+					"client_id": client_id,
 					"id": item2.attr("id"),
 					"newFather": result.id
 				};
@@ -337,7 +342,7 @@ function combineItemsInToGroup(item1, item2) {
 }
 
 // Move the specified node in to the specified group
-function moveInToGroup(node, group) {
+function moveInToGroup(node, group, updateDB) {
 	// Insure that specified node is a regular item
 	if (!node.hasClass("item")) {
 		return;
@@ -373,18 +378,21 @@ function moveInToGroup(node, group) {
 	group.addClass("groupUpdated");
 
 	// Update database - only if group has already been put in DB
-	var groupID = group.attr("id");
-	if (groupID != "none") {
-		data = {
-			"id": node.attr("id"),
-			"newFather": group.attr("id")
-		};
-		$.post("/reparent", data);
+	if (updateDB) {
+		var groupID = group.attr("id");
+		if (groupID != "none") {
+			data = {
+				"client_id": client_id,
+				"id": node.attr("id"),
+				"newFather": group.attr("id")
+			};
+			$.post("/reparent", data);
+		}
 	}
 }
 
 // Move the specified node out of its group
-function moveOutOfGroup(node) {
+function moveOutOfGroup(node, updateDB) {
 	// Insure that node is a regular item
 	if (!node.hasClass("item")) {
 		return;
@@ -406,6 +414,8 @@ function moveOutOfGroup(node) {
 	var y = parseInt(node.attr("nodedowny"));
 	x += groupx;
 	y += groupy;
+//	x = nodePos.left + groupx;
+//	y = nodePos.top + groupy;
 	node.css("left", x);
 	node.css("top", y);
 	node.attr("nodedownx", x);
@@ -414,17 +424,20 @@ function moveOutOfGroup(node) {
 	layoutGroupChildren(group);
 
 	// Update database
-	var topicid = getURLParameter("topicid");
-	data = {
-		"id": node.attr("id"),
-		"newFather": topicid
-	};
-	$.post("/reparent", data, function() {
-		// Delete group if it is now empty
-		if (group.children(".item").length == 0) {
-			deleteIdea(group);
-		}
-	});
+	if (updateDB) {
+		var topicid = getURLParameter("topicid");
+		data = {
+			"client_id": client_id,
+			"id": node.attr("id"),
+			"newFather": topicid
+		};
+		$.post("/reparent", data, function() {
+			// Delete group if it is now empty
+			if (group.children(".item").length == 0) {
+				deleteIdea(group);
+			}
+		});
+	}
 }
 
 // Relayout position of children with a group
@@ -528,7 +541,7 @@ function updateGroups(node) {
 		// Determine if node has been dragged out of group
 		if ((nodex > groupw) || (nodey > grouph) || ((nodex + nodew) < 0) || ((nodey + nodeh) < 0)) {
 //			console.log("node dragged OUT OF GROUP");
-			moveOutOfGroup(node);
+			moveOutOfGroup(node, true);
 		}
 	} else {
 		// Determine if node should be dragged INTO GROUP
@@ -551,7 +564,7 @@ function updateGroups(node) {
 			
 			if ((nodex1 < groupx2) && (nodey1 < groupy2) && (nodex2 > groupx1) && (nodey2 > groupy1)) {
 				// console.log("node dragged IN TO GROUP");
-				moveInToGroup(node, group);
+				moveInToGroup(node, group, true);
 			}
 		});
 		
@@ -674,6 +687,7 @@ function createEventHandlers() {
 			layoutGroupChildren(group);
 			updateGroupBounds(group);
 			group.removeClass("groupUpdated");
+			createEventHandlers();
 		})
 
 		return false;
@@ -728,6 +742,31 @@ function handleNew(data) {
 	var y = data.y;
 	genIdeaHTML(text, id, x, y, true);
 	createEventHandlers();
+}
+
+function handleReparent(data) {
+	console.log("REPARENT message received");
+	var id = data.id;
+	var father = $("#" + data.newFatherId);
+	// Check if father is a regular item - if so, first turn it into a group
+	if (father.hasClass("item")) {
+		var idea = {
+			id: data.newFatherId,
+			idea: father.html(),
+			children: [],
+			x: father.position().left,
+			y: father.position().top
+		}
+		var html = genGroupHTML(idea);
+		$("#ideas").append(html);
+		father.remove();
+		father = $("#" + data.newFatherId);
+	}
+	if (father.hasClass("group")) {
+		moveInToGroup($("#" + id), father, false);
+	} else {
+		moveOutOfGroup($("#" + id), false);
+	}
 }
 
 function handleLike(data) {

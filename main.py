@@ -197,12 +197,22 @@ class NewHandler(webapp2.RequestHandler):
 class ReparentHandler(webapp2.RequestHandler):
 	# Moves item to new parent
 	def post(self):
+		client_id = self.request.get('client_id')
 		idStr = self.request.get('id')
 		newFatherId = self.request.get('newFather')
 		ideaObj = Idea.get_by_id(int(idStr))
 		newFatherObj = Idea.get_by_id(int(newFatherId))
 		if ideaObj and newFatherObj:
 			ideaObj.reparent(newFatherObj)
+
+		# Update clients
+		message = {
+			"op": "reparent",
+			"id": idStr,
+			"newFatherId": newFatherId,
+		}
+		topic_id = str(ideaObj.getTopic().key().id())
+		send_message(client_id, topic_id, message)		# Update other clients about this change
 
 class EditHandler(webapp2.RequestHandler):
 	# Edits an existing idea

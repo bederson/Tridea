@@ -1,5 +1,4 @@
-=> Channel push
-  - Grouping support
+  - Update # of ideas displayed
 
 BUGS
   * Can't get initial layout to work without a delay which causes a FLASH
